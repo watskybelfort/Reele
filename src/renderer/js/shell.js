@@ -11,6 +11,22 @@ import { $, el, glifo, pintarGlifo, plural, formatoLargo } from './dom.js';
 import { crearLista } from './lista.js';
 import { crearSondeo } from './sondeo.js';
 
+/** El titulo de la cabecera segun la vista. Las carpetas usan su nombre. */
+const TITULOS = { videos: 'Videos', seguir: 'Seguir viendo' };
+
+/**
+ * El vacio se explica distinto en cada vista.
+ *
+ * "Anade una carpeta" no ayuda en Seguir viendo, donde puede haber una
+ * biblioteca entera y aun asi nada a medias; y "no has dejado nada a medias"
+ * seria absurdo en una biblioteca sin un solo archivo.
+ */
+const VACIOS = {
+  videos: ['Aqui todavia no hay nada', 'Anade una carpeta con tus videos o suelta archivos en la ventana.'],
+  seguir: ['No has dejado nada a medias', 'Lo que pares por la mitad aparecera aqui para seguirlo donde lo dejaste.'],
+  carpeta: ['Esta carpeta no tiene videos', 'Puede que solo tenga formatos que Chromium no sabe decodificar.'],
+};
+
 export function initShell(motor, ajustes) {
   const raiz = document.documentElement;
   const cuerpo = $('#vista-cuerpo');
@@ -20,14 +36,26 @@ export function initShell(motor, ajustes) {
   const escaneo = $('#escaneo');
   const escaneoTexto = $('#escaneo-texto');
   const cuentaVideos = $('#cuenta-videos');
+  const cuentaSeguir = $('#cuenta-seguir');
   const listaCarpetas = $('#lista-carpetas');
 
   let videos = [];
   let carpetas = [];
+  /** Ids de lo que se puede seguir viendo, del mas reciente al mas antiguo. */
+  let seguirViendo = [];
   let vista = { tipo: 'videos' };
+  /**
+   * El orden que eligio el usuario en la cabecera.
+   *
+   * Se guarda aparte porque "Seguir viendo" impone el suyo —lo ultimo que se
+   * dejo a medias va primero— y al salir de esa vista hay que devolver el
+   * de antes, no dejar la biblioteca ordenada por una regla invisible.
+   */
+  let ordenUsuario = { por: ajustes.sortBy ?? 'title', dir: ajustes.sortDir ?? 'asc' };
   const alCambiarVista = new Set();
 
   pintarGlifo($('#icono-videos'), 'video');
+  pintarGlifo($('#icono-seguir'), 'reproducir');
   pintarGlifo($('#icono-anadir'), 'anadir');
   pintarGlifo($('#icono-abrir'), 'abrir');
   pintarGlifo($('#icono-buscar'), 'buscar');
@@ -46,23 +74,43 @@ export function initShell(motor, ajustes) {
       // video empieza a sonar con la biblioteca todavia en pantalla.
       motor.queue.setContext(enPantalla, { startIndex: indice });
     },
-    onOrden: ({ por, dir }) => window.reele.settings.set({ sortBy: por, sortDir: dir }),
+    onOrden: ({ por, dir }) => {
+      if (por === 'ninguno') return;
+      ordenUsuario = { por, dir };
+      window.reele.settings.set({ sortBy: por, sortDir: dir });
+    },
     onFiltrado: () => pintarResumen(),
   });
-  lista.setOrden(ajustes.sortBy, ajustes.sortDir);
 
+  const vacioVista = vacio('vista', 'video', '', '');
   cuerpo.dataset.modo = 'lista';
   cuerpo.append(
     lista.nodo,
     vacio('busqueda', 'buscar', 'Sin resultados', 'Prueba con otra cosa: se busca por titulo, por nombre de archivo y por carpeta.'),
-    vacio('vista', 'video', 'Aqui todavia no hay nada', 'Anade una carpeta con tus videos o suelta archivos en la ventana.'),
+    vacioVista,
   );
+
+  /*
+   * El orden se aplica DESPUES de montar todo lo de arriba.
+   *
+   * setOrden repinta, repintar llama a pintarResumen, y pintarResumen toca
+   * el nodo del estado vacio. Puesto justo detras de crearLista —que es
+   * donde pide el ojo— se ejecuta antes de que ese nodo exista y la shell
+   * entera se cae con un error de inicializacion.
+   */
+  lista.setOrden(ajustes.sortBy, ajustes.sortDir);
+
+  function pintarVacio() {
+    const [encabezado, texto] = VACIOS[vista.tipo] ?? VACIOS.videos;
+    vacioVista.querySelector('.vacio__titulo').textContent = encabezado;
+    vacioVista.querySelector('.vacio__texto').textContent = texto;
+  }
 
   // --- Cabecera -------------------------------------------------------------
 
   function pintarResumen() {
     const enPantalla = lista.visibles;
-    titulo.textContent = vista.tipo === 'carpeta' ? vista.nombre : 'Videos';
+    titulo.textContent = vista.tipo === 'carpeta' ? vista.nombre : TITULOS[vista.tipo] ?? 'Videos';
 
     if (!enPantalla.length) {
       resumen.textContent = videos.length ? 'Nada que encaje con la busqueda' : 'Sin videos todavia';
@@ -79,6 +127,7 @@ export function initShell(motor, ajustes) {
 
     cuerpo.dataset.vacio = String(!enPantalla.length);
     cuerpo.dataset.fuenteVacia = String(!fuente().length);
+    pintarVacio();
   }
 
   // --- Vistas ---------------------------------------------------------------
@@ -89,11 +138,21 @@ export function initShell(motor, ajustes) {
       const raizCarpeta = vista.ruta.toLowerCase();
       return videos.filter((v) => v.path.toLowerCase().startsWith(raizCarpeta));
     }
+    if (vista.tipo === 'seguir') {
+      // El orden lo da la lista de ids, que ya viene de lo mas reciente a lo
+      // mas antiguo. Se mapea en vez de filtrar para no perderlo.
+      const porId = new Map(videos.map((v) => [v.id, v]));
+      return seguirViendo.map((id) => porId.get(id)).filter(Boolean);
+    }
     return videos;
   }
 
   function setVista(nueva) {
     vista = nueva;
+    // En "Seguir viendo" el orden ES la informacion: reordenarlo
+    // alfabeticamente lo convertiria en otra lista cualquiera.
+    if (vista.tipo === 'seguir') lista.setOrden('ninguno');
+    else lista.setOrden(ordenUsuario.por, ordenUsuario.dir);
     lista.setVideos(fuente());
     pintarNavegacion();
     for (const fn of alCambiarVista) fn(vista);
@@ -105,12 +164,14 @@ export function initShell(motor, ajustes) {
 
   function pintarNavegacion() {
     $('#nav-videos').setAttribute('aria-current', String(vista.tipo === 'videos'));
+    $('#nav-seguir').setAttribute('aria-current', String(vista.tipo === 'seguir'));
     for (const nodo of listaCarpetas.querySelectorAll('.carpeta')) {
       nodo.dataset.activa = String(vista.tipo === 'carpeta' && nodo.dataset.ruta === vista.ruta);
     }
   }
 
   $('#nav-videos').addEventListener('click', () => setVista({ tipo: 'videos' }));
+  $('#nav-seguir').addEventListener('click', () => setVista({ tipo: 'seguir' }));
 
   // --- Carpetas -------------------------------------------------------------
 
@@ -273,14 +334,19 @@ export function initShell(motor, ajustes) {
   // --- Carga ----------------------------------------------------------------
 
   async function refrescar() {
-    const [todos, dirs] = await Promise.all([
+    const [todos, dirs, marcas, aMedias] = await Promise.all([
       window.reele.library.all(),
       window.reele.library.folders(),
+      window.reele.progreso.fracciones(),
+      window.reele.progreso.seguirViendo(),
     ]);
     videos = todos;
     carpetas = dirs;
+    seguirViendo = aMedias;
 
     cuentaVideos.textContent = videos.length ? String(videos.length) : '';
+    cuentaSeguir.textContent = seguirViendo.length ? String(seguirViendo.length) : '';
+    lista.setProgreso(marcas);
     pintarCarpetas();
     lista.setVideos(fuente());
     ocultarEscaneo();
@@ -292,11 +358,32 @@ export function initShell(motor, ajustes) {
     return videos;
   }
 
+  /**
+   * Solo las marcas de "por donde iba", sin volver a pedir la biblioteca.
+   *
+   * Se llama al pausar y al terminar un video, que puede ser cada pocos
+   * minutos. Pasar por `refrescar` entero traeria otra vez los miles de
+   * videos por IPC y, peor, devolveria la lista al principio.
+   */
+  async function refrescarProgreso() {
+    const [marcas, aMedias] = await Promise.all([
+      window.reele.progreso.fracciones(),
+      window.reele.progreso.seguirViendo(),
+    ]);
+    seguirViendo = aMedias;
+    cuentaSeguir.textContent = seguirViendo.length ? String(seguirViendo.length) : '';
+    lista.setProgreso(marcas);
+    // Estando en "Seguir viendo", lo que cambia no es solo la barrita: puede
+    // haber entrado o salido una fila entera de la lista.
+    if (vista.tipo === 'seguir') lista.setVideos(fuente());
+  }
+
   if (ajustes.view === 'videos') vista = { tipo: 'videos' };
 
   return {
     lista,
     refrescar,
+    refrescarProgreso,
     get vista() { return vista; },
     get videos() { return videos; },
     setVista,

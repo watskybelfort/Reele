@@ -101,6 +101,16 @@ contextBridge.exposeInMainWorld('reele', {
     },
   },
 
+  // --- Por donde iba ------------------------------------------------------
+  progreso: {
+    de: (id) => ipcRenderer.invoke('prog:for', id),
+    fracciones: () => ipcRenderer.invoke('prog:fractions'),
+    seguirViendo: (limite) => ipcRenderer.invoke('prog:continue', limite),
+    olvidar: (id) => ipcRenderer.invoke('prog:forget', id),
+    visto: (id, duracion) => ipcRenderer.invoke('prog:seen', id, duracion),
+    guardar: (id, t, dur) => ipcRenderer.send('prog:save', id, t, dur),
+  },
+
   // --- Subtitulos ---------------------------------------------------------
   subtitulos: {
     para: (videoId) => ipcRenderer.invoke('subs:for', videoId),

@@ -9,6 +9,7 @@ import { initTransporte } from './transport.js';
 import { initShell } from './shell.js';
 import { crearSubtitulos } from './subtitulos.js';
 import { crearPistasAudio } from './pistas.js';
+import { crearReanudar } from './reanudar.js';
 import { $, pintarGlifo } from './dom.js';
 
 const raiz = document.documentElement;
@@ -47,6 +48,12 @@ async function boot() {
   const pistasAudio = crearPistasAudio(motor.player, { ajustes });
   const transporte = initTransporte(motor, { escenario, subtitulos, pistasAudio });
   const shell = initShell(motor, ajustes);
+
+  // Al pausar, al terminar y al cambiar de video pueden haber cambiado las
+  // marcas de "por donde iba": la lista y el contador del lateral se
+  // refrescan entonces, no en cada segundo de reproduccion.
+  const reanudar = crearReanudar(motor, { ajustes });
+  reanudar.onCambio(() => shell.refrescarProgreso());
 
   /*
    * El sondeo puede terminar DESPUES de que el video ya este en pantalla:

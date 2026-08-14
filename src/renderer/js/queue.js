@@ -33,6 +33,16 @@ export class Queue {
     this.autoplay = true;
     this.fallos = 0;
 
+    /**
+     * Enganche para decidir DONDE empieza cada video.
+     *
+     * Lo usa "continuar donde lo dejaste". Tiene que ser aqui y no un salto
+     * despues de arrancar: saltando luego se ven los primeros fotogramas del
+     * principio antes del brinco, que es exactamente el efecto de "se ha
+     * equivocado y se ha corregido".
+     */
+    this.antesDeReproducir = null;
+
     player.on('ended', () => this._avanzarAuto());
 
     player.on('error', ({ track, message }) => {
@@ -295,7 +305,8 @@ export class Queue {
     if (!track) return this._terminar();
 
     this._emit('track', { track, index: this.index });
-    return this.player.playTrack(track, opciones);
+    const extra = this.antesDeReproducir ? await this.antesDeReproducir(track) : null;
+    return this.player.playTrack(track, { ...opciones, ...extra });
   }
 
   async _avanzarAuto() {

@@ -20,7 +20,7 @@ const { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS, VELOCIDADES } = require('./defaul
  * `ctx` lleva { getWindow, settings, library }.
  */
 function registerIpc(ctx) {
-  const { getWindow, settings, library } = ctx;
+  const { getWindow, settings, library, progreso } = ctx;
 
   const withWindow = (fn) => (...args) => {
     const win = getWindow();
@@ -197,6 +197,27 @@ function registerIpc(ctx) {
   ipcMain.handle('library:probe-done', async () => {
     const vivos = library.all().map((t) => t.thumb).filter(Boolean);
     return miniaturas.limpiar(vivos);
+  });
+
+  // --- Por donde iba --------------------------------------------------------
+
+  ipcMain.handle('prog:for', (_e, id) => progreso.de(id));
+
+  ipcMain.handle('prog:fractions', () => progreso.fracciones());
+
+  ipcMain.handle('prog:continue', (_e, limite) => progreso.seguirViendo(limite));
+
+  ipcMain.handle('prog:forget', (_e, id) => progreso.olvidar(id));
+
+  ipcMain.handle('prog:seen', (_e, id, duracion) => progreso.marcarVisto(id, duracion));
+
+  /*
+   * Por `on` y no por `handle`: el renderer avisa cada pocos segundos
+   * mientras hay algo en marcha y no espera respuesta. Un invoke por cada
+   * aviso seria una promesa ida y vuelta para nada.
+   */
+  ipcMain.on('prog:save', (_e, id, t, dur) => {
+    progreso.guardar(id, t, dur);
   });
 
   // --- Subtitulos -----------------------------------------------------------

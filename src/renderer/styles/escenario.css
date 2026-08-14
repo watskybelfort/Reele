@@ -250,6 +250,60 @@
   to { transform: rotate(360deg); }
 }
 
+/* --------------------------------------------------- aviso de reanudado */
+
+/*
+ * "Seguimos en 12:34", con la salida al lado.
+ *
+ * Arriba a la derecha y no en el centro: reanudar es lo que se ha pedido, no
+ * una pregunta. Ponerlo en medio de la imagen obligaria a leerlo y a
+ * quitarlo cada vez que se abre algo a medias, que es casi siempre. Ahi
+ * arriba se ve si se busca y se va solo si no.
+ */
+.escenario__aviso {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 8px 14px;
+  border-radius: var(--radio-2);
+  background: rgb(0 0 0 / 0.58);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--realce-borde-fuerte);
+  box-shadow: var(--sombra-2);
+  color: var(--texto);
+  font-size: 12.5px;
+  animation: aviso-entra var(--dur-3) var(--ease-out);
+}
+
+@keyframes aviso-entra {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.escenario__aviso-accion {
+  padding: 4px 10px;
+  border-radius: var(--radio-full);
+  background: rgb(255 255 255 / 0.12);
+  color: var(--texto);
+  font-size: 12px;
+  white-space: nowrap;
+  transition: background var(--dur-1) var(--ease-out);
+}
+
+.escenario__aviso-accion:hover {
+  background: rgb(var(--acento) / 0.85);
+  color: #0b0e13;
+}
+
+/* Con los mandos escondidos tampoco pinta nada un aviso sobre la pelicula. */
+:root[data-mandos='ocultos'] .escenario__aviso {
+  display: none;
+}
+
 /* ---------------------------------------------------------------- error */
 
 /*

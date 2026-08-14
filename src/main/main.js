@@ -11,6 +11,7 @@ const { registerIpc, paraCliente } = require('./ipc');
 const { registerSchemes, registerHandlers } = require('./protocols');
 const protocols = require('./protocols');
 const { Library } = require('./library');
+const { Progreso } = require('./progreso');
 
 const APP_URL = 'reele://app/index.html';
 
@@ -27,6 +28,7 @@ if (!gotLock) {
 let mainWindow = null;
 let settings = null;
 let library = null;
+let progreso = null;
 /** Archivos que llegaron de un doble clic antes de que hubiera ventana. */
 const pendientes = [];
 
@@ -82,7 +84,16 @@ function main() {
     for (const carpeta of settings.get('folders', [])) protocols.allowRoot(carpeta);
     for (const track of library.all()) protocols.allowFile(track.path);
 
-    registerIpc({ getWindow: () => mainWindow, settings, library });
+    // Almacen aparte del de la biblioteca: la biblioteca se reconstruye con
+    // cada escaneo, pero por donde iba cada video no lo puede recuperar el
+    // usuario de ninguna manera.
+    const progresoStore = new JsonStore(
+      path.join(app.getPath('userData'), 'progreso.json'),
+      { version: 1, videos: {} },
+    );
+    progreso = new Progreso(progresoStore, settings);
+
+    registerIpc({ getWindow: () => mainWindow, settings, library, progreso });
 
     mainWindow = createMainWindow(settings);
     mainWindow.loadURL(APP_URL);
@@ -167,6 +178,7 @@ function alFrente(win) {
 function cerrar() {
   if (settings) settings.save();
   if (library) library.persist();
+  if (progreso) progreso.store.save();
 }
 
 /**
@@ -232,6 +244,9 @@ async function escaneoInicial() {
     console.error('[main] el escaneo inicial fallo:', err.message);
   }
   for (const track of library.all()) protocols.allowFile(track.path);
+  // Lo que ya no esta en disco tampoco tiene que seguir en "seguir viendo":
+  // sin esto la lista se llena de peliculas borradas que al pulsarlas fallan.
+  progreso?.podar(new Set(library.all().map((t) => t.id)));
   enviar('library:changed', { total: library.size() });
 }
 
