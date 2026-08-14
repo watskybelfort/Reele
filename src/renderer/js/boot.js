@@ -15,6 +15,7 @@ import { initSistema } from './sistema.js';
 import { crearAjustes } from './ajustes.js';
 import { crearColecciones } from './colecciones.js';
 import { engancharCola } from './cola.js';
+import { crearPaleta } from './paleta.js';
 import { $, pintarGlifo } from './dom.js';
 
 const raiz = document.documentElement;
@@ -77,6 +78,21 @@ async function boot() {
     transporte.pintarVideo(video);
   });
 
+  /*
+   * El color del vidrio sigue al video.
+   *
+   * Se engancha tambien al enriquecido porque el fotograma puede llegar
+   * despues: al abrir un archivo con doble clic, el sondeo termina con la
+   * pelicula ya en pantalla, y sin esto el tinte se quedaria en el de
+   * reserva hasta el video siguiente.
+   */
+  const paleta = crearPaleta({ ajustes });
+  motor.player.on('trackchange', ({ track }) => paleta.aplicar(track));
+  window.reele.library.onEnriquecido((video) => {
+    if (motor.player.track?.id === video.id) paleta.aplicar(video);
+  });
+  paleta.aplicar(motor.player.track);
+
   const atajos = crearAtajos({ motor, escenario, subtitulos });
 
   const panelAjustes = crearAjustes({ ajustes, atajos, escenario, subtitulos });
@@ -90,7 +106,10 @@ async function boot() {
   engancharApertura(motor);
 
   await shell.refrescar();
-  return { motor, escenario, shell, cola, atajos, transporte, reanudar, sistema, panelAjustes };
+  return {
+    motor, escenario, shell, cola, atajos,
+    transporte, reanudar, sistema, panelAjustes, paleta,
+  };
 }
 
 /**
