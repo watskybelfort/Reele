@@ -1,0 +1,370 @@
+/* ============================================================================
+ * REELE · LISTA DE VIDEOS
+ *
+ * Solo existen en el DOM las filas visibles. Con una biblioteca de cinco mil
+ * archivos, pintarlas todas son decenas de miles de nodos —cada uno con su
+ * miniatura— y la ventana tarda segundos en abrir. Aqui el hueco lo ocupa un
+ * espaciador de la altura total y las filas se colocan encima por indice.
+ * ==========================================================================*/
+
+.lista {
+  --alto-fila: 60px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.lista__cabecera,
+.fila {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 2.6fr) minmax(0, 1.2fr) 30px 70px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px;
+}
+
+/* Sin favoritos todavia no hay nada que poner en esa columna, y dejarla
+   abierta corre los titulos de sitio sin motivo. */
+.lista--sin-fav .lista__cabecera,
+.lista--sin-fav .fila {
+  grid-template-columns: 40px minmax(0, 2.6fr) minmax(0, 1.2fr) 70px;
+}
+
+.lista--sin-fav .lista__col-hueco,
+.lista--sin-fav .fila__fav-hueco {
+  display: none;
+}
+
+.lista__cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 32px;
+  border-bottom: 1px solid var(--realce-borde);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texto-3);
+}
+
+.lista__col {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition: color var(--dur-1) var(--ease-out);
+}
+
+.lista__col:hover {
+  color: var(--texto-2);
+}
+
+.lista__col[aria-sort] {
+  color: var(--texto);
+}
+
+.lista__col--fin {
+  justify-content: flex-end;
+}
+
+.lista__flecha {
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  font-size: 8px;
+}
+
+.lista__viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* Sin esto, el scroll de la lista arrastra al de la pagina cuando llega al
+     final y el contenido de detras se mueve solo. */
+  overscroll-behavior: contain;
+}
+
+.lista__espacio {
+  position: relative;
+  height: calc(var(--filas, 0) * var(--alto-fila));
+}
+
+/* ------------------------------------------------------------------ filas */
+
+.fila {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--i, 0) * var(--alto-fila));
+  height: var(--alto-fila);
+  border-radius: var(--radio-1);
+  cursor: default;
+  transition: background var(--dur-1) var(--ease-out);
+}
+
+.fila:hover {
+  background: var(--hover);
+}
+
+.fila[data-seleccionada='true'] {
+  background: var(--seleccion);
+}
+
+.fila[data-activa='true'] .fila__titulo {
+  color: rgb(var(--acento));
+}
+
+.fila__num {
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--texto-3);
+}
+
+/* El numero se cambia por un boton de reproducir al pasar por encima: es el
+   gesto que la gente ya conoce y ahorra una columna entera de botones. */
+.fila__num-texto,
+.fila__num-play {
+  grid-area: 1 / 1;
+}
+
+.fila__num-play {
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  font-size: 12px;
+  color: var(--texto);
+  opacity: 0;
+}
+
+.fila:hover .fila__num-texto,
+.fila[data-activa='true'] .fila__num-texto {
+  opacity: 0;
+}
+
+.fila:hover .fila__num-play {
+  opacity: 1;
+}
+
+/* Barritas animadas en la fila que se esta viendo: se distingue de un vistazo
+   sin tener que leer el transporte. */
+.fila__ondas {
+  grid-area: 1 / 1;
+  display: none;
+  align-items: flex-end;
+  gap: 2px;
+  height: 13px;
+}
+
+.fila[data-activa='true'] .fila__ondas {
+  display: flex;
+}
+
+.fila[data-activa='true']:hover .fila__ondas {
+  display: none;
+}
+
+.fila__ondas span {
+  width: 2px;
+  border-radius: 1px;
+  background: rgb(var(--acento));
+  animation: ondas-baile 900ms var(--ease-in-out) infinite alternate;
+}
+
+.fila__ondas span:nth-child(1) { height: 40%; animation-delay: 0ms; }
+.fila__ondas span:nth-child(2) { height: 90%; animation-delay: 180ms; }
+.fila__ondas span:nth-child(3) { height: 60%; animation-delay: 360ms; }
+
+@keyframes ondas-baile {
+  from { transform: scaleY(0.35); }
+  to { transform: scaleY(1); }
+}
+
+.fila[data-sonando='false'] .fila__ondas span {
+  animation-play-state: paused;
+}
+
+.fila__principal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* 16:9, que es la proporcion de casi todo. Un cuadrado como el de las
+   caratulas de Sounde obligaria a recortar cada fotograma por los lados. */
+.fila__arte {
+  position: relative;
+  flex: 0 0 auto;
+  width: 76px;
+  height: 43px;
+  border-radius: 5px;
+  border: 1px solid var(--realce-borde);
+  background: var(--vidrio-2);
+  overflow: hidden;
+}
+
+.fila__arte img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Marcador de posicion mientras el sondeo no ha sacado el fotograma. */
+.fila__arte::after {
+  content: '\E714';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--texto-3);
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  font-size: 15px;
+}
+
+.fila__arte[data-con-arte='true']::after {
+  content: none;
+}
+
+/* Lo que se lleva visto, pegado al borde de abajo de la miniatura. La pista
+   oscura debajo hace falta: sobre un fotograma claro, una barra de acento
+   sin fondo se pierde y no se distingue del propio video. */
+.fila__visto {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.fila__visto::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: calc(var(--visto, 0) * 100%);
+  background: rgb(var(--acento));
+}
+
+.fila__textos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fila__titulo {
+  font-size: 13px;
+  color: var(--texto);
+}
+
+.fila__detalle {
+  font-size: 11.5px;
+  color: var(--texto-3);
+}
+
+.fila__carpeta {
+  font-size: 12px;
+  color: var(--texto-2);
+}
+
+.fila__duracion {
+  font-size: 12px;
+  color: var(--texto-3);
+  text-align: right;
+}
+
+/* El corazon solo asoma al pasar por encima, salvo que ya este marcado: una
+   columna de corazones vacios en toda la biblioteca es ruido puro. */
+.fila__fav {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radio-full);
+  color: var(--texto-3);
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+
+.fila:hover .fila__fav,
+.fila__fav[data-marcado='true'],
+.fila__fav:focus-visible {
+  opacity: 1;
+}
+
+.fila__fav[data-marcado='true'] {
+  color: rgb(var(--acento));
+}
+
+.fila__fav:hover {
+  color: var(--texto);
+}
+
+/* Linea de insercion al reordenar. */
+.lista__linea {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: calc(var(--hueco, 0) * var(--alto-fila));
+  height: 2px;
+  margin-top: -1px;
+  border-radius: var(--radio-full);
+  background: rgb(var(--acento));
+  box-shadow: 0 0 0 3px rgb(var(--acento) / 0.18);
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------- montaje en vista */
+
+/* Con la lista dentro, el que desplaza es su viewport, no el cuerpo: dos
+   barras de scroll anidadas se pelean y el teclado nunca sabe cual mueve. */
+.vista__cuerpo[data-modo='lista'] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.vista__cuerpo[data-modo='lista'] .lista {
+  flex: 1;
+  min-height: 0;
+}
+
+.vista__cuerpo[data-modo='lista'] .vacio--busqueda,
+.vista__cuerpo[data-modo='lista'] .vacio--vista {
+  display: none;
+}
+
+.vista__cuerpo[data-modo='lista'][data-vacio='true'] .lista {
+  display: none;
+}
+
+/* "La busqueda no encuentra nada" y "esta vista aun no tiene nada" son dos
+   situaciones distintas y el consejo util es distinto en cada una. */
+.vista__cuerpo[data-modo='lista'][data-vacio='true'][data-fuente-vacia='false'] .vacio--busqueda {
+  display: flex;
+}
+
+.vista__cuerpo[data-modo='lista'][data-vacio='true'][data-fuente-vacia='true'] .vacio--vista {
+  display: flex;
+}
+
+/* En ventanas estrechas la carpeta estorba antes que nada. */
+@container (max-width: 700px) {
+  .lista__cabecera,
+  .fila {
+    grid-template-columns: 40px minmax(0, 1fr) 30px 70px;
+  }
+
+  .lista--sin-fav .lista__cabecera,
+  .lista--sin-fav .fila {
+    grid-template-columns: 40px minmax(0, 1fr) 0 70px;
+  }
+
+  .lista__col--folder,
+  .fila__carpeta {
+    display: none;
+  }
+}

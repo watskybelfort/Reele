@@ -1,13 +1,16 @@
 'use strict';
 
+const fs = require('node:fs');
 const path = require('node:path');
 const { app, BrowserWindow } = require('electron');
 
 const { JsonStore } = require('./store');
-const { DEFAULT_SETTINGS } = require('./defaults');
+const { DEFAULT_SETTINGS, VIDEO_EXTENSIONS } = require('./defaults');
 const { createMainWindow, setMiniPlayer } = require('./window');
-const { registerIpc } = require('./ipc');
+const { registerIpc, paraCliente } = require('./ipc');
 const { registerSchemes, registerHandlers } = require('./protocols');
+const protocols = require('./protocols');
+const { Library } = require('./library');
 
 const APP_URL = 'reele://app/index.html';
 
@@ -23,6 +26,9 @@ if (!gotLock) {
 
 let mainWindow = null;
 let settings = null;
+let library = null;
+/** Archivos que llegaron de un doble clic antes de que hubiera ventana. */
+const pendientes = [];
 
 function main() {
   app.setAppUserModelId(identidadShell());
@@ -44,9 +50,17 @@ function main() {
   // arranque; despues de app.ready se ignoran en silencio.
   registerSchemes();
 
-  app.on('second-instance', () => {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
+  app.on('second-instance', (_e, argv) => {
+    const archivos = archivosDeArgv(argv);
+    // El doble clic puede caer mientras la ventana todavia se esta creando.
+    // Guardarlos es la diferencia entre que la pelicula se abra o se pierda
+    // en silencio, que es el peor final posible para un doble clic.
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      pendientes.push(...archivos);
+      return;
+    }
     alFrente(mainWindow);
+    abrirArchivos(archivos);
   });
 
   app.whenReady().then(async () => {
@@ -56,7 +70,19 @@ function main() {
     );
 
     registerHandlers();
-    registerIpc({ getWindow: () => mainWindow, settings });
+
+    const libraryStore = new JsonStore(
+      path.join(app.getPath('userData'), 'library.json'),
+      { version: 1, tracks: [] },
+    );
+    library = new Library(libraryStore);
+
+    // Sin volver a autorizar las carpetas guardadas, tras reiniciar la app
+    // toda la biblioteca da 403 al intentar reproducirse.
+    for (const carpeta of settings.get('folders', [])) protocols.allowRoot(carpeta);
+    for (const track of library.all()) protocols.allowFile(track.path);
+
+    registerIpc({ getWindow: () => mainWindow, settings, library });
 
     mainWindow = createMainWindow(settings);
     mainWindow.loadURL(APP_URL);
@@ -68,6 +94,11 @@ function main() {
     if (process.argv.includes('--dev')) {
       mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
+
+    mainWindow.webContents.once('did-finish-load', () => {
+      abrirArchivos([...archivosDeArgv(process.argv), ...pendientes.splice(0)]);
+      escaneoInicial();
+    });
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -134,6 +165,64 @@ function alFrente(win) {
 
 function cerrar() {
   if (settings) settings.save();
+  if (library) library.persist();
 }
 
-module.exports = { alFrente };
+/**
+ * Los archivos que llegan de "Abrir con..." vienen sueltos en argv, mezclados
+ * con los flags de Chromium. Se filtra por extension conocida y existencia
+ * real: cualquier otra cosa es un flag, no un video.
+ */
+function archivosDeArgv(argv = []) {
+  const exts = new Set(VIDEO_EXTENSIONS);
+  return argv
+    .slice(1)
+    .filter((a) => typeof a === 'string' && !a.startsWith('-'))
+    .filter((a) => exts.has(path.extname(a).toLowerCase()))
+    .filter((a) => {
+      try {
+        return fs.statSync(a).isFile();
+      } catch {
+        return false;
+      }
+    })
+    .map((a) => path.resolve(a));
+}
+
+/**
+ * Escaneo al arrancar.
+ *
+ * Es incremental y no abre ningun archivo, asi que sobre una biblioteca ya
+ * vista cuesta milisegundos. Sin esto, lo que el usuario haya anadido a sus
+ * carpetas con la app cerrada no aparece hasta que se acuerde de pulsar
+ * "volver a escanear", que no se le va a ocurrir a nadie.
+ */
+async function escaneoInicial() {
+  const folders = settings.get('folders', []);
+  if (!folders.length || !library) return;
+
+  const enviar = (canal, datos) => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(canal, datos);
+  };
+
+  try {
+    await library.scan(folders, (p) => enviar('library:progress', p));
+  } catch (err) {
+    console.error('[main] el escaneo inicial fallo:', err.message);
+  }
+  for (const track of library.all()) protocols.allowFile(track.path);
+  enviar('library:changed', { total: library.size() });
+}
+
+async function abrirArchivos(files) {
+  if (!files.length || !library || !mainWindow || mainWindow.isDestroyed()) return;
+  const tracks = await library.addFiles(files);
+  if (!tracks.length) return;
+  mainWindow.webContents.send('app:open-files', tracks.map(paraCliente));
+
+  // Abrir desde el Explorador mete el video en la biblioteca igual que
+  // soltarlo en la ventana, asi que hay que avisar de que cambio. Sin esto
+  // se reproducia pero no salia en la lista hasta reiniciar la app: parecia
+  // que abrirlo con Reele ya puesto "no habia hecho nada".
+  mainWindow.webContents.send('library:changed', { total: library.size() });
+}

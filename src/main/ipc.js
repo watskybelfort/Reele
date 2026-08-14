@@ -1,6 +1,8 @@
 'use strict';
 
-const { ipcMain, shell, app } = require('electron');
+const path = require('node:path');
+const fsp = require('node:fs/promises');
+const { ipcMain, dialog, shell, app } = require('electron');
 
 const {
   applyBackdrop,
@@ -8,14 +10,15 @@ const {
   setPantallaCompleta,
   togglePantallaCompleta,
 } = require('./window');
+const protocols = require('./protocols');
 const { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS, VELOCIDADES } = require('./defaults');
 
 /**
  * Registra los handlers del proceso principal.
- * `ctx` lleva { getWindow, settings }.
+ * `ctx` lleva { getWindow, settings, library }.
  */
 function registerIpc(ctx) {
-  const { getWindow, settings } = ctx;
+  const { getWindow, settings, library } = ctx;
 
   const withWindow = (fn) => (...args) => {
     const win = getWindow();
@@ -27,6 +30,8 @@ function registerIpc(ctx) {
     const win = getWindow();
     if (win && !win.isDestroyed()) win.webContents.send(canal, datos);
   };
+
+  const bibliotecaCambio = () => emitir('library:changed', { total: library.size() });
 
   // --- Ventana ------------------------------------------------------------
   ipcMain.handle('window:minimize', withWindow((win) => {
@@ -81,6 +86,83 @@ function registerIpc(ctx) {
     return applyBackdrop(win, settings);
   });
 
+  // --- Biblioteca ---------------------------------------------------------
+  ipcMain.handle('library:all', () => library.all().map(paraCliente));
+
+  ipcMain.handle('library:folders', () => settings.get('folders', []));
+
+  ipcMain.handle('library:scan', async () => {
+    const folders = settings.get('folders', []);
+    if (!folders.length) return { ok: false, reason: 'sin-carpetas' };
+    const res = await library.scan(folders, (p) => emitir('library:progress', p));
+    bibliotecaCambio();
+    return res;
+  });
+
+  ipcMain.handle('library:cancel-scan', () => {
+    library.cancel();
+    return true;
+  });
+
+  ipcMain.handle('library:add-folder', withWindow(async (win) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      title: 'Anadir carpetas de video',
+      properties: ['openDirectory', 'multiSelections'],
+    });
+    if (canceled || !filePaths.length) return null;
+
+    const actuales = settings.get('folders', []);
+    const fusion = [...new Set([...actuales, ...filePaths])];
+    settings.set('folders', fusion);
+    for (const f of fusion) protocols.allowRoot(f);
+
+    const res = await library.scan(fusion, (p) => emitir('library:progress', p));
+    bibliotecaCambio();
+    return { folders: fusion, ...res };
+  }));
+
+  ipcMain.handle('library:remove-folder', async (_e, folder) => {
+    const restantes = settings.get('folders', []).filter((f) => f !== folder);
+    settings.set('folders', restantes);
+
+    // Se rehacen las raices autorizadas desde cero: quitar una carpeta tiene
+    // que revocar el acceso, no solo sacarla de la lista.
+    protocols.clearRoots();
+    for (const f of restantes) protocols.allowRoot(f);
+
+    const res = await library.scan(restantes, (p) => emitir('library:progress', p));
+    bibliotecaCambio();
+    return { folders: restantes, ...res };
+  });
+
+  ipcMain.handle('library:open-files', withWindow(async (win) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      title: 'Abrir archivos de video',
+      properties: ['openFile', 'multiSelections'],
+      filters: [
+        { name: 'Video', extensions: VIDEO_EXTENSIONS.map((e) => e.slice(1)) },
+        { name: 'Todos', extensions: ['*'] },
+      ],
+    });
+    if (canceled || !filePaths.length) return [];
+    const tracks = await library.addFiles(filePaths);
+    bibliotecaCambio();
+    return tracks.map(paraCliente);
+  }));
+
+  ipcMain.handle('library:add-paths', async (_e, rutas) => {
+    if (!Array.isArray(rutas) || !rutas.length) return [];
+    const expandidas = await expandir(rutas);
+    const tracks = await library.addFiles(expandidas);
+    bibliotecaCambio();
+    return tracks.map(paraCliente);
+  });
+
+  ipcMain.handle('library:reveal', (_e, ruta) => {
+    if (typeof ruta === 'string' && ruta) shell.showItemInFolder(ruta);
+    return true;
+  });
+
   // --- Varios -------------------------------------------------------------
   /**
    * Abrir un enlace fuera.
@@ -118,4 +200,55 @@ function registerIpc(ctx) {
   }));
 }
 
-module.exports = { registerIpc };
+/**
+ * Lo que ve el renderer. Las rutas del disco no viajan como `file://`: la
+ * pagina no puede leerlas y ademas serian un agujero. Van como URL del
+ * esquema propio, que ya valida contra las raices autorizadas.
+ */
+function paraCliente(track) {
+  return {
+    ...track,
+    url: protocols.encodePath(track.path),
+    thumbUrl: track.thumb ? protocols.thumbUrl(track.thumb) : null,
+  };
+}
+
+/** Si sueltan una carpeta, hay que entrar a buscar el video de dentro. */
+async function expandir(rutas) {
+  const salida = [];
+  const exts = new Set(VIDEO_EXTENSIONS);
+
+  for (const ruta of rutas) {
+    let stat;
+    try {
+      stat = await fsp.stat(ruta);
+    } catch {
+      continue;
+    }
+    if (stat.isFile()) {
+      if (exts.has(path.extname(ruta).toLowerCase())) salida.push(ruta);
+      continue;
+    }
+    if (stat.isDirectory()) {
+      protocols.allowRoot(ruta);
+      const pila = [ruta];
+      while (pila.length) {
+        const dir = pila.pop();
+        let entradas;
+        try {
+          entradas = await fsp.readdir(dir, { withFileTypes: true });
+        } catch {
+          continue;
+        }
+        for (const e of entradas) {
+          const completo = path.join(dir, e.name);
+          if (e.isDirectory()) pila.push(completo);
+          else if (exts.has(path.extname(e.name).toLowerCase())) salida.push(completo);
+        }
+      }
+    }
+  }
+  return salida;
+}
+
+module.exports = { registerIpc, paraCliente };
