@@ -93,6 +93,7 @@ function main() {
 
     if (process.argv.includes('--dev')) {
       mainWindow.webContents.openDevTools({ mode: 'detach' });
+      espiarConsola(mainWindow);
     }
 
     mainWindow.webContents.once('did-finish-load', () => {
@@ -166,6 +167,26 @@ function alFrente(win) {
 function cerrar() {
   if (settings) settings.save();
   if (library) library.persist();
+}
+
+/**
+ * Con --dev, lo que la pagina escribe en consola sale tambien por el terminal.
+ *
+ * Sin esto, depurar el renderer obliga a tener las herramientas de desarrollo
+ * abiertas y a mirarlas a mano, que no sirve de nada cuando lo que se quiere
+ * es leer un aviso que salta una vez al arrancar.
+ *
+ * La firma del evento cambio en Electron: antes eran cuatro argumentos
+ * sueltos y ahora es un objeto. Se aceptan las dos para no atarse a una
+ * version concreta.
+ */
+function espiarConsola(win) {
+  win.webContents.on('console-message', (evento, nivel, mensaje) => {
+    const texto = evento?.message ?? mensaje;
+    const linea = evento?.lineNumber ?? '';
+    const fuente = evento?.sourceId ? ` (${path.basename(evento.sourceId)}:${linea})` : '';
+    if (texto) console.log(`[pagina]${fuente}`, texto);
+  });
 }
 
 /**
