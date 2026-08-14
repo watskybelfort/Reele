@@ -9,6 +9,8 @@ tema, misma estructura, mismos hábitos — pero pensado de arriba abajo para
 vídeo: subtítulos, pistas de audio, continuar donde lo dejaste y la pantalla
 que no se apaga.
 
+![Reele](docs/reele.png)
+
 ---
 
 ## Qué hace

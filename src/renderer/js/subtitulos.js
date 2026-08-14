@@ -291,9 +291,19 @@ export function crearSubtitulos(player, opciones = {}) {
  * forzadas: los subtitulos forzados solo traducen los carteles y las frases
  * en otro idioma, asi que quien los recibe sin pedirlos cree que el archivo
  * viene con los subtitulos incompletos.
+ *
+ * Con VARIAS pistas y ninguna del idioma preferido no se pone ninguna: unos
+ * subtitulos en un idioma que no entiendes tapan la imagen sin dar nada a
+ * cambio. Pero si solo hay UNA y no dice de que idioma es —el caso corriente
+ * de "pelicula.mkv" con "pelicula.srt" al lado— se enciende: quien deja un
+ * unico archivo de subtitulos junto al video es porque quiere verlo, y
+ * obligarle a abrir el menu cada vez seria absurdo.
  */
 function elegirAutomatica(pistas, idiomaPreferido) {
-  if (!pistas.length || !idiomaPreferido) return null;
+  if (!pistas.length) return null;
+
+  if (pistas.length === 1 && !pistas[0].idioma) return pistas[0];
+  if (!idiomaPreferido) return null;
 
   const delIdioma = pistas.filter((p) => coincideIdioma(p, idiomaPreferido));
   if (!delIdioma.length) return null;
