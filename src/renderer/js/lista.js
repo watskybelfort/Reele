@@ -23,8 +23,13 @@ export function crearLista(opciones = {}) {
     altoFila = 60,
     conCabecera = true,
     onFavorito,
+    onQuitar,
     onMenu,
     onMover,
+    // Modo estrecho, para el panel de la cola: sin cabecera, sin columna de
+    // carpeta y con la duracion metida en la segunda linea, que es lo unico
+    // que cabe en 320 pixeles de ancho.
+    compacta = false,
   } = opciones;
 
   /**
@@ -52,8 +57,9 @@ export function crearLista(opciones = {}) {
   const linea = el('div', { class: 'lista__linea', hidden: true });
   const viewport = el('div', { class: 'lista__viewport', tabindex: '0' }, [filas, linea]);
   const cabecera = conCabecera ? crearCabecera() : null;
+  const conAccion = !!(onFavorito || onQuitar);
   const raiz = el('div', {
-    class: `lista${onFavorito ? '' : ' lista--sin-fav'}`,
+    class: `lista${conAccion ? '' : ' lista--sin-fav'}${compacta ? ' lista--compacta' : ''}`,
   }, [cabecera?.nodo, viewport]);
   raiz.style.setProperty('--alto-fila', `${altoFila}px`);
 
@@ -250,9 +256,13 @@ export function crearLista(opciones = {}) {
     const detalle = el('div', { class: 'fila__detalle truncar' });
     const carpeta = el('div', { class: 'fila__carpeta truncar' });
     const duracion = el('div', { class: 'fila__duracion tabular' });
-    const favorito = onFavorito
-      ? el('button', { class: 'fila__fav' })
-      : el('div', { class: 'fila__fav-hueco' });
+    // Un solo hueco para la accion de la derecha. En la biblioteca es el
+    // corazon; en la cola, quitar de la cola. Nunca hacen falta los dos.
+    const accion = onQuitar
+      ? el('button', { class: 'fila__fav fila__quitar', texto: glifo('quitar'), title: 'Quitar de la cola' })
+      : onFavorito
+        ? el('button', { class: 'fila__fav' })
+        : el('div', { class: 'fila__fav-hueco' });
 
     const nodo = el('div', { class: 'fila', role: 'row' }, [
       el('div', { class: 'fila__num' }, [numero, play, ondas]),
@@ -261,17 +271,18 @@ export function crearLista(opciones = {}) {
         el('div', { class: 'fila__textos' }, [titulo, detalle]),
       ]),
       carpeta,
-      favorito,
+      accion,
       duracion,
     ]);
 
     let indiceActual = -1;
 
-    if (onFavorito) {
-      favorito.addEventListener('click', (e) => {
-        // Sin frenarlo, marcar un favorito selecciona ademas la fila.
+    if (onFavorito || onQuitar) {
+      accion.addEventListener('click', (e) => {
+        // Sin frenarlo, pulsar la accion selecciona ademas la fila.
         e.stopPropagation();
-        onFavorito(visibles[indiceActual]);
+        if (onQuitar) onQuitar(visibles[indiceActual], indiceActual);
+        else onFavorito(visibles[indiceActual]);
       });
     }
 
@@ -315,7 +326,7 @@ export function crearLista(opciones = {}) {
 
         numero.textContent = String(indice + 1);
         titulo.textContent = track.title;
-        detalle.textContent = subtitulo(track);
+        detalle.textContent = subtitulo(track, compacta);
         carpeta.textContent = track.folder ?? '';
         duracion.textContent = track.duration ? formatoTiempo(track.duration) : '—';
         nodo.title = track.fileName ?? track.title;
@@ -334,13 +345,15 @@ export function crearLista(opciones = {}) {
         vistoHasta.hidden = visto <= 0;
         vistoHasta.style.setProperty('--visto', String(visto));
 
-        if (onFavorito) {
+        if (onFavorito && !onQuitar) {
           const esFav = favoritos.has(track.id);
-          favorito.textContent = glifo(esFav ? 'corazonLleno' : 'corazon');
-          favorito.dataset.marcado = String(esFav);
+          accion.textContent = glifo(esFav ? 'corazonLleno' : 'corazon');
+          accion.dataset.marcado = String(esFav);
           const etiqueta = esFav ? 'Quitar de favoritos' : 'Anadir a favoritos';
-          favorito.title = etiqueta;
-          favorito.setAttribute('aria-label', `${etiqueta}: ${track.title}`);
+          accion.title = etiqueta;
+          accion.setAttribute('aria-label', `${etiqueta}: ${track.title}`);
+        } else if (onQuitar) {
+          accion.setAttribute('aria-label', `Quitar ${track.title} de la cola`);
         }
 
         nodo.dataset.id = track.id;
@@ -432,8 +445,11 @@ export function crearLista(opciones = {}) {
  * el ano y la calidad. Es exactamente la informacion que se busca cuando en la
  * carpeta hay dos copias de la misma pelicula.
  */
-function subtitulo(track) {
+function subtitulo(track, conDuracion = false) {
   const partes = [];
+  // En el modo estrecho no hay columna de duracion, asi que se cuela aqui:
+  // es el dato que mas se mira de una cola.
+  if (conDuracion && track.duration) partes.push(formatoTiempo(track.duration));
   if (track.season || track.episode) {
     const s = String(track.season ?? 1).padStart(2, '0');
     const e = String(track.episode ?? 1).padStart(2, '0');

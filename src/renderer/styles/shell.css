@@ -22,10 +22,13 @@
  * escrita en la rejilla, la columna existe aunque el lateral no: cuando el
  * panel esta escondido —o simplemente todavia no se ha montado— queda una
  * franja muerta de 236 pixeles a la izquierda del video.
+ *
+ * La tercera va igual, por el mismo motivo y ademas porque `auto` no se
+ * puede animar: la apertura de la cola la anima el ancho del propio panel.
  */
 .app {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) var(--ancho-cola);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-rows: var(--alto-titulo) minmax(0, 1fr) var(--alto-transporte);
   grid-template-areas:
     'titulo     titulo     titulo'

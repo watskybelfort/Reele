@@ -1,0 +1,131 @@
+/* ============================================================================
+ * REELE · COLA
+ *
+ * Tercera columna de la rejilla. El ancho lo lleva `--ancho-cola`, que vive
+ * en shell.css y vale 0 cuando esta cerrada: asi la transicion de apertura la
+ * hace la propia rejilla y no hace falta animar nada a mano.
+ * ==========================================================================*/
+
+:root[data-cola='abierta'] {
+  --ancho-cola: 320px;
+}
+
+.cola {
+  grid-area: cola;
+  display: flex;
+  flex-direction: column;
+  width: var(--ancho-cola);
+  min-height: 0;
+  transition: width var(--dur-2) var(--ease-in-out);
+  /* `overflow: hidden` es lo que deja que el panel se recorte al cerrarse en
+     vez de desbordar sobre el video mientras la columna se encoge. */
+  overflow: hidden;
+  background: var(--vidrio-1);
+  border-left: 1px solid var(--realce-borde);
+}
+
+/* Cerrada no debe recibir ni el tabulador. */
+:root:not([data-cola='abierta']) .cola {
+  visibility: hidden;
+}
+
+.cola__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 10px 10px 16px;
+  border-bottom: 1px solid var(--realce-borde);
+}
+
+.cola__titulo {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.cola__resumen {
+  margin-top: 1px;
+  font-size: 11px;
+  color: var(--texto-3);
+  white-space: nowrap;
+}
+
+.cola .lista {
+  flex: 1;
+  min-height: 0;
+  padding: 6px 6px 10px;
+}
+
+.cola[data-vacia='true'] .lista {
+  display: none;
+}
+
+.cola:not([data-vacia='true']) .cola__vacio {
+  display: none;
+}
+
+.cola__vacio {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 30px 24px;
+  text-align: center;
+}
+
+/* --------------------------------------------------------- modo estrecho */
+
+/*
+ * En 320 pixeles no caben cinco columnas. Se quedan el numero, la ficha y el
+ * boton de quitar; la carpeta se va y la duracion se mete en la segunda
+ * linea de la ficha, que es donde de verdad se mira en una cola.
+ */
+.lista--compacta .lista__cabecera,
+.lista--compacta .fila {
+  grid-template-columns: 22px minmax(0, 1fr) 26px;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.lista--compacta .fila__carpeta,
+.lista--compacta .fila__duracion {
+  display: none;
+}
+
+.lista--compacta .fila__num {
+  font-size: 11px;
+}
+
+.lista--compacta .fila__arte {
+  width: 58px;
+  height: 33px;
+}
+
+.lista--compacta .fila__principal {
+  gap: 9px;
+}
+
+.lista--compacta .fila__titulo {
+  font-size: 12.5px;
+}
+
+.lista--compacta .fila__detalle {
+  font-size: 11px;
+}
+
+/* Quitar de la cola: mismo hueco que el corazon de la biblioteca. */
+.fila__quitar {
+  font-size: 10px;
+}
+
+.fila__quitar:hover {
+  color: #ff6b5e;
+}
+
+/* En mini y a pantalla completa la cola no existe: la ventana ES el video. */
+:root[data-mini='true'] .cola,
+:root[data-pantalla='true'] .cola {
+  display: none;
+}
