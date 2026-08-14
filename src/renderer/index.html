@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es" data-focused="true" data-backdrop="acrylic" data-mini="false" data-pantalla="false" data-lateral="abierto">
+<head>
+  <meta charset="utf-8">
+  <!-- CSP estricta: sin 'unsafe-inline'. Por eso en el codigo no hay ni un
+       atributo style="" ni un <style> suelto: todo lo dinamico se hace por
+       CSSOM (el.style.setProperty), que la CSP si permite. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none';
+                 script-src 'self';
+                 style-src 'self';
+                 img-src 'self' data: blob: reele-thumb:;
+                 media-src 'self' blob: reele-file:;
+                 font-src 'self';
+                 connect-src 'self' reele-thumb: reele-file:">
+  <title>Reele</title>
+  <link rel="stylesheet" href="styles/acrylic.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/shell.css">
+  <link rel="stylesheet" href="styles/titlebar.css">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="titlebar">
+    <div class="titlebar__marca">
+      <svg class="titlebar__logo" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <rect x="1.7" y="3.1" width="12.6" height="9.8" rx="2.4"
+              stroke="currentColor" stroke-width="1.4"/>
+        <path d="M6.7 6.3 10.5 8 6.7 9.7Z" fill="currentColor"/>
+      </svg>
+      <span>Reele</span>
+    </div>
+
+    <div class="titlebar__ahora truncar" id="titulo-ahora">Reele</div>
+
+    <div class="titlebar__espacio"></div>
+
+    <div class="titlebar__controles">
+      <button class="titlebar__btn titlebar__btn--mini" id="btn-salir-mini"
+              title="Volver a la ventana completa" aria-label="Volver a la ventana completa">&#xE73F;</button>
+      <button class="titlebar__btn" id="btn-minimizar" title="Minimizar" aria-label="Minimizar">&#xE921;</button>
+      <button class="titlebar__btn" id="btn-maximizar" title="Maximizar" aria-label="Maximizar">&#xE922;</button>
+      <button class="titlebar__btn titlebar__btn--cerrar" id="btn-cerrar" title="Cerrar" aria-label="Cerrar">&#xE8BB;</button>
+    </div>
+  </header>
+
+  <section class="vista">
+    <div class="vista__cuerpo" id="vista-cuerpo">
+      <div class="vacio">
+        <span class="vacio__icono" aria-hidden="true">&#xE714;</span>
+        <h1 class="vacio__titulo">Reele</h1>
+        <p class="vacio__texto">
+          Reproductor de video con el acrilico de Windows. Todavia no hay
+          biblioteca que ensenar.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script type="module" src="js/boot.js"></script>
+</body>
+</html>

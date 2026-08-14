@@ -1,0 +1,133 @@
+/* ============================================================================
+ * REELE · BARRA DE TITULO
+ * Marco propio: Windows no dibuja nada, asi que el arrastre y los botones
+ * son responsabilidad de la pagina.
+ * ==========================================================================*/
+
+.titlebar {
+  position: relative;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding-left: 14px;
+  flex: 0 0 auto;
+  /* La barra NO se tinta. Es la franja donde mas se disfruta el acrilico
+     limpio, y tintarla la separa visualmente del resto sin ganar nada. */
+  background: transparent;
+  -webkit-app-region: drag;
+}
+
+.titlebar__marca {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--texto-2);
+}
+
+.titlebar__logo {
+  width: 16px;
+  height: 16px;
+  color: rgb(var(--acento));
+}
+
+.titlebar__espacio {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+/* Titulo centrado: lo que se esta viendo, no el nombre de la app. */
+.titlebar__ahora {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  height: 40px;
+  max-width: 42%;
+  font-size: 12px;
+  color: var(--texto-3);
+  pointer-events: none;
+}
+
+.titlebar__controles {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar__btn {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 100%;
+  color: var(--texto-2);
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  font-size: 10px;
+  transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+
+.titlebar__btn:hover {
+  background: var(--hover);
+  color: var(--texto);
+}
+
+.titlebar__btn:active {
+  background: var(--pulsado);
+}
+
+/* Rojo solo en el hover de cerrar, como manda Windows. */
+.titlebar__btn--cerrar:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+.titlebar__btn--cerrar:active {
+  background: #b0271a;
+}
+
+/* Salir del mini vive en la barra de titulo porque el boton normal esta en
+   los mandos flotantes, que en mini no se pintan: sin esto la unica salida
+   seria el atajo de teclado. */
+.titlebar__btn--mini {
+  display: none;
+}
+
+/* En mini-player la barra se encoge y se queda con lo justo. El alto tiene
+   que casar con MINI_TITULO de main/window.js, que es lo que se descuenta
+   al clavar la proporcion 16:9 de la ventana. */
+:root[data-mini='true'] .titlebar {
+  height: 30px;
+  padding-left: 10px;
+  gap: 8px;
+}
+
+:root[data-mini='true'] .titlebar__btn {
+  width: 34px;
+}
+
+:root[data-mini='true'] .titlebar__btn--mini {
+  display: grid;
+}
+
+/* Maximizar no tiene sentido con la proporcion clavada, y el titulo centrado
+   no cabe en 480 de ancho junto a los botones. */
+:root[data-mini='true'] #btn-maximizar,
+:root[data-mini='true'] .titlebar__ahora,
+:root[data-mini='true'] .titlebar__marca span {
+  display: none;
+}
+
+/* A pantalla completa no hay marco: la ventana ES el video. Todo lo demas
+   sale de los mandos flotantes que se esconden solos. */
+:root[data-pantalla='true'] .titlebar {
+  display: none;
+}
