@@ -6,6 +6,7 @@ import { initTitlebar } from './titlebar.js';
 import { crearMotor } from './engine.js';
 import { crearEscenario } from './escenario.js';
 import { initTransporte } from './transport.js';
+import { initShell } from './shell.js';
 import { $, pintarGlifo } from './dom.js';
 
 const raiz = document.documentElement;
@@ -41,11 +42,13 @@ async function boot() {
     onVolumen: (v) => motor.setVolume(v),
   });
   initTransporte(motor, { escenario });
+  const shell = initShell(motor, ajustes);
 
   engancharTitulo(motor);
   engancharApertura(motor);
 
-  return { motor, escenario };
+  await shell.refrescar();
+  return { motor, escenario, shell };
 }
 
 /**

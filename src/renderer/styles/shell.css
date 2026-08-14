@@ -238,6 +238,18 @@
   color: var(--texto-2);
 }
 
+.carpeta[data-activa='true'] {
+  background: var(--seleccion);
+  color: var(--texto);
+}
+
+.carpeta__icono {
+  flex: 0 0 auto;
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  font-size: 12px;
+  line-height: 1;
+}
+
 .carpeta__nombre {
   min-width: 0;
   overflow: hidden;

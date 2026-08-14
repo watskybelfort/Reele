@@ -50,21 +50,71 @@
     </div>
   </header>
 
-  <section class="vista">
-    <div class="vista__cuerpo" id="vista-cuerpo">
-      <div class="vacio">
-        <span class="vacio__icono" aria-hidden="true">&#xE714;</span>
-        <h1 class="vacio__titulo">Nada abierto todavia</h1>
-        <p class="vacio__texto">
-          Suelta un video en la ventana, abrelo desde aqui, o haz doble clic
-          en cualquier archivo del Explorador si has puesto Reele como
-          predeterminado.
-        </p>
-        <div class="vacio__acciones">
-          <button class="boton boton--acento" id="btn-abrir-archivos">Abrir archivos</button>
-        </div>
-      </div>
+  <nav class="lateral" aria-label="Navegacion">
+    <div class="lateral__grupo">
+      <button class="lateral__item" id="btn-plegar" title="Plegar el panel" aria-label="Plegar el panel">
+        <span class="lateral__icono" id="icono-plegar" aria-hidden="true"></span>
+      </button>
     </div>
+
+    <!-- Todo lo que puede crecer va aqui dentro y desplaza junto. El pie se
+         queda fuera para que los botones no se vayan de pantalla. -->
+    <div class="lateral__scroll">
+
+      <div class="lateral__grupo">
+        <span class="lateral__titulo">Biblioteca</span>
+        <button class="lateral__item" id="nav-videos" aria-current="true">
+          <span class="lateral__icono" id="icono-videos" aria-hidden="true"></span>
+          <span class="lateral__texto">Videos</span>
+          <span class="lateral__cuenta tabular" id="cuenta-videos"></span>
+        </button>
+      </div>
+
+      <div class="lateral__grupo">
+        <span class="lateral__titulo">
+          Carpetas
+          <button class="lateral__accion" id="btn-reescanear"
+                  title="Volver a escanear" aria-label="Volver a escanear"></button>
+        </span>
+        <div class="lateral__carpetas" id="lista-carpetas"></div>
+      </div>
+
+    </div><!-- /lateral__scroll -->
+
+    <div class="lateral__grupo lateral__pie">
+      <button class="boton boton--ancho" id="btn-anadir-carpeta" title="Anadir una carpeta de video">
+        <span class="boton__icono" id="icono-anadir" aria-hidden="true"></span>
+        <span class="boton__texto">Anadir carpeta</span>
+      </button>
+      <button class="boton boton--ancho" id="btn-abrir-archivos" title="Abrir archivos sueltos">
+        <span class="boton__icono" id="icono-abrir" aria-hidden="true"></span>
+        <span class="boton__texto">Abrir archivos</span>
+      </button>
+    </div>
+  </nav>
+
+  <section class="vista">
+    <header class="vista__cabecera">
+      <div>
+        <h1 class="vista__titulo" id="vista-titulo">Videos</h1>
+        <div class="vista__resumen" id="vista-resumen">Sin videos todavia</div>
+      </div>
+      <div class="vista__acciones">
+        <div class="escaneo" id="escaneo" hidden>
+          <span id="escaneo-texto">Escaneando…</span>
+          <div class="escaneo__barra"><div class="escaneo__relleno"></div></div>
+        </div>
+        <label class="buscador">
+          <span class="buscador__icono" id="icono-buscar" aria-hidden="true"></span>
+          <input class="buscador__campo" id="buscador" type="text" spellcheck="false"
+                 placeholder="Buscar" aria-label="Buscar en la biblioteca">
+        </label>
+        <button class="icono-btn" id="btn-ver-todo" title="Reproducir todo" aria-label="Reproducir todo"></button>
+        <button class="icono-btn" id="btn-ver-aleatorio" title="Reproducir en aleatorio" aria-label="Reproducir en aleatorio"></button>
+      </div>
+    </header>
+
+    <div class="vista__cuerpo" id="vista-cuerpo"></div>
   </section>
 
   <section class="escenario" id="escenario" data-encaje="contain" data-hay-video="false">
