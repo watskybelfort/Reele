@@ -12,6 +12,9 @@ const { registerSchemes, registerHandlers } = require('./protocols');
 const protocols = require('./protocols');
 const { Library } = require('./library');
 const { Progreso } = require('./progreso');
+const taskbar = require('./taskbar');
+const bandeja = require('./bandeja');
+const despierto = require('./despierto');
 
 const APP_URL = 'reele://app/index.html';
 
@@ -29,6 +32,8 @@ let mainWindow = null;
 let settings = null;
 let library = null;
 let progreso = null;
+/** Distingue "cerrar la ventana" de "salir del programa" con la bandeja puesta. */
+let saliendo = false;
 /** Archivos que llegaron de un doble clic antes de que hubiera ventana. */
 const pendientes = [];
 
@@ -97,6 +102,7 @@ function main() {
 
     mainWindow = createMainWindow(settings);
     mainWindow.loadURL(APP_URL);
+    aBandejaAlCerrar(mainWindow);
 
     if (settings.get('miniPlayer')) {
       mainWindow.once('ready-to-show', () => setMiniPlayer(mainWindow, true));
@@ -116,6 +122,7 @@ function main() {
       if (BrowserWindow.getAllWindows().length === 0) {
         mainWindow = createMainWindow(settings);
         mainWindow.loadURL(APP_URL);
+        aBandejaAlCerrar(mainWindow);
       }
     });
   });
@@ -125,7 +132,27 @@ function main() {
     app.quit();
   });
 
-  app.on('before-quit', () => cerrar());
+  app.on('before-quit', () => {
+    // A partir de aqui la X ya no esconde: se esta saliendo de verdad.
+    saliendo = true;
+    cerrar();
+  });
+}
+
+/**
+ * Con la bandeja puesta, la X esconde la ventana en vez de cerrarla.
+ *
+ * En un reproductor de video tiene menos sentido que en uno de musica —nadie
+ * ve una pelicula con la ventana cerrada—, pero si lo tiene para quitarla de
+ * en medio un rato sin perder la cola ni la posicion. Por eso el ajuste viene
+ * apagado y hay que pedirlo.
+ */
+function aBandejaAlCerrar(win) {
+  win.on('close', (evento) => {
+    if (saliendo || !settings?.get('minimizeToTray', false)) return;
+    evento.preventDefault();
+    win.hide();
+  });
 }
 
 /**
@@ -179,6 +206,12 @@ function cerrar() {
   if (settings) settings.save();
   if (library) library.persist();
   if (progreso) progreso.store.save();
+  // Sin esto Windows deja el distintivo pegado al icono hasta que el hueco de
+  // la barra de tareas se recicla, que puede tardar.
+  taskbar.limpiar(mainWindow);
+  bandeja.destruir();
+  // Y el bloqueo de apagado de pantalla sobrevive al proceso si no se suelta.
+  despierto.soltar();
 }
 
 /**

@@ -53,6 +53,13 @@ contextBridge.exposeInMainWorld('reele', {
     onPantalla: (h) => on('window:fullscreen', h),
   },
 
+  // --- Reproduccion en el sistema -----------------------------------------
+  player: {
+    /** Avisa de como va: barra de tareas, bandeja, avisos y pantalla. */
+    report: (estado) => ipcRenderer.send('player:state', estado),
+    onCommand: (h) => on('player:command', h),
+  },
+
   // --- Ajustes ------------------------------------------------------------
   settings: {
     all: () => ipcRenderer.invoke('settings:all'),

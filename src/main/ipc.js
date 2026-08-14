@@ -4,6 +4,11 @@ const path = require('node:path');
 const fsp = require('node:fs/promises');
 const { ipcMain, dialog, shell, app } = require('electron');
 
+const taskbar = require('./taskbar');
+const bandeja = require('./bandeja');
+const notificaciones = require('./notificaciones');
+const despierto = require('./despierto');
+
 const {
   applyBackdrop,
   setMiniPlayer,
@@ -70,12 +75,68 @@ function registerIpc(ctx) {
     pantalla: win.isFullScreen(),
   })));
 
+  // --- Barra de tareas, bandeja y pantalla despierta ------------------------
+  /*
+   * Por `on` y no por `handle`: el renderer avisa de como va la reproduccion
+   * varias veces por minuto y no espera respuesta. Un invoke por cada aviso
+   * seria una promesa ida y vuelta para nada.
+   */
+  const mandarOrden = (orden) => emitir('player:command', { orden });
+
+  bandeja.sincronizar(settings.get('minimizeToTray', false), {
+    getWindow,
+    mandar: mandarOrden,
+    salir: () => app.quit(),
+  });
+
+  let ultimaVentana = null;
+  ipcMain.on('player:state', (_e, estado) => {
+    const win = getWindow();
+    if (!win || win.isDestroyed()) return;
+    // Una ventana nueva nace sin botones ni distintivo. El cache de "lo ultimo
+    // aplicado" es del modulo, no de la ventana: sin este reinicio la firma
+    // seguiria coincidiendo y la barra se quedaria vacia para siempre.
+    if (win !== ultimaVentana) {
+      ultimaVentana = win;
+      taskbar.reiniciar();
+    }
+    taskbar.aplicarEstado(win, estado, mandarOrden);
+
+    // El bloqueo de apagado de pantalla se ata a que haya algo en marcha, no
+    // a que la aplicacion este abierta: en pausa, el equipo tiene que poder
+    // descansar como con cualquier otro programa.
+    despierto.activar(!!estado?.viendo && settings.get('keepAwake', true));
+
+    // El aviso y la bandeja salen del mismo parte porque el cambio de video ya
+    // viene ahi: un canal por cada uno mandaria tres mensajes por pelicula.
+    const track = estado?.id ? library.get(estado.id) : null;
+    if (track) {
+      notificaciones.avisarDeVideo(win, track, {
+        activo: settings.get('showNotifications', true),
+        viendo: !!estado.viendo,
+      });
+    }
+    bandeja.actualizar({ track, viendo: !!estado?.viendo, hayVideo: !!estado?.hayVideo });
+  });
+
   // --- Ajustes ------------------------------------------------------------
   ipcMain.handle('settings:all', () => settings.all());
 
   ipcMain.handle('settings:set', (_e, patch) => {
     if (!patch || typeof patch !== 'object') return settings.all();
     settings.merge(patch);
+    // La bandeja se enciende y se apaga en el acto: si esperase al siguiente
+    // arranque, el ajuste pareceria no hacer nada.
+    if (patch.minimizeToTray !== undefined) {
+      bandeja.sincronizar(!!patch.minimizeToTray, {
+        getWindow,
+        mandar: mandarOrden,
+        salir: () => app.quit(),
+      });
+    }
+    // Apagar "mantener la pantalla encendida" tiene que soltar el bloqueo ya,
+    // no al siguiente cambio de estado del reproductor.
+    if (patch.keepAwake === false) despierto.activar(false);
     emitir('settings:changed', patch);
     return settings.all();
   });
