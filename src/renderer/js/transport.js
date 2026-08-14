@@ -14,7 +14,7 @@ import { PASO_RETARDO } from './subtitulos.js';
 
 export function initTransporte(motor, opciones = {}) {
   const { player, queue } = motor;
-  const { escenario, subtitulos } = opciones;
+  const { escenario, subtitulos, pistasAudio } = opciones;
 
   // La miniatura y el boton de volver al video son el mismo elemento: se
   // pulsa lo que se quiere recuperar. Ver la nota en transport.css.
@@ -31,6 +31,7 @@ export function initTransporte(motor, opciones = {}) {
   const btnRepetir = $('#btn-repetir');
   const btnSilencio = $('#btn-silencio');
   const btnSubtitulos = $('#btn-subtitulos');
+  const btnPistas = $('#btn-pistas');
   const btnMini = $('#btn-mini');
   const btnPantalla = $('#btn-pantalla');
 
@@ -45,6 +46,7 @@ export function initTransporte(motor, opciones = {}) {
   pintarGlifo(btnPantalla, 'aPantalla');
   pintarSvg(btnMini, 'mini');
   pintarSvg(btnSubtitulos, 'subtitulos');
+  pintarSvg(btnPistas, 'pistas');
 
   // --- Posicion -------------------------------------------------------------
 
@@ -255,6 +257,41 @@ export function initTransporte(motor, opciones = {}) {
 
   subtitulos?.onCambio(pintarSubtitulos);
 
+  // --- Pistas de audio ------------------------------------------------------
+
+  /**
+   * El boton solo existe cuando hay algo que elegir.
+   *
+   * Un archivo con una sola pista de audio es la norma; dejar el boton ahi
+   * apagado en el 90% de los videos es un hueco muerto en una barra que ya va
+   * justa de sitio. Y si esta version de Chromium no expone `audioTracks`,
+   * tampoco se ensena: un menu vacio no explica nada.
+   */
+  function pintarPistas() {
+    const estado = pistasAudio?.estado();
+    btnPistas.hidden = !estado?.hay;
+    if (!estado?.hay) return;
+    const actual = estado.pistas[estado.activa];
+    btnPistas.title = actual ? `Pista de audio: ${actual.etiqueta}` : 'Pista de audio';
+    btnPistas.setAttribute('aria-label', btnPistas.title);
+  }
+
+  btnPistas.addEventListener('click', () => {
+    const estado = pistasAudio?.estado();
+    if (!estado?.hay) return;
+    abrirMenu({
+      titulo: 'Pista de audio',
+      ancla: btnPistas,
+      items: estado.pistas.map((pista) => ({
+        texto: pista.etiqueta,
+        marcado: pista.indice === estado.activa,
+        onElegir: () => pistasAudio.elegir(pista.indice),
+      })),
+    });
+  });
+
+  pistasAudio?.onCambio(pintarPistas);
+
   window.reele.window.onMini(({ mini }) => {
     btnMini.setAttribute('aria-pressed', String(mini));
     btnMini.title = mini ? 'Volver a la ventana completa' : 'Mini reproductor';
@@ -294,8 +331,9 @@ export function initTransporte(motor, opciones = {}) {
   pintarVolumen();
   pintarModos();
   pintarSubtitulos();
+  pintarPistas();
 
-  return { pintarVideo, pintarVolumen, pintarModos, pintarSubtitulos };
+  return { pintarVideo, pintarVolumen, pintarModos, pintarSubtitulos, pintarPistas };
 }
 
 /** La segunda linea: episodio, ano, resolucion y carpeta. */
