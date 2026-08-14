@@ -385,6 +385,27 @@
   pointer-events: none;
 }
 
+/*
+ * El boton de velocidad lleva el numero, no un icono.
+ *
+ * Es la unica forma de que se lea el estado sin pulsarlo: un glifo de
+ * cronometro dice "aqui se cambia la velocidad" pero no dice que estas a
+ * 1.5x, que es justo lo que se quiere saber de un vistazo cuando el dialogo
+ * suena raro.
+ */
+.icono-btn--texto {
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Fuera de 1x se marca con el acento: es un estado que conviene no olvidar
+   puesto, porque se nota en todo lo que se vea despues. */
+.icono-btn--texto[data-alterada='true'] {
+  color: rgb(var(--acento));
+}
+
 /* ----------------------------------------------------------------- vista */
 
 .vista {

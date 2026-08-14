@@ -10,6 +10,7 @@ import { initShell } from './shell.js';
 import { crearSubtitulos } from './subtitulos.js';
 import { crearPistasAudio } from './pistas.js';
 import { crearReanudar } from './reanudar.js';
+import { crearAtajos } from './atajos.js';
 import { $, pintarGlifo } from './dom.js';
 
 const raiz = document.documentElement;
@@ -46,7 +47,8 @@ async function boot() {
   });
   const subtitulos = crearSubtitulos(motor.player, { ajustes });
   const pistasAudio = crearPistasAudio(motor.player, { ajustes });
-  const transporte = initTransporte(motor, { escenario, subtitulos, pistasAudio });
+  const { velocidades } = await window.reele.app.constants();
+  const transporte = initTransporte(motor, { escenario, subtitulos, pistasAudio, velocidades });
   const shell = initShell(motor, ajustes);
 
   // Al pausar, al terminar y al cambiar de video pueden haber cambiado las
@@ -67,11 +69,13 @@ async function boot() {
     transporte.pintarVideo(video);
   });
 
+  const atajos = crearAtajos({ motor, escenario, subtitulos });
+
   engancharTitulo(motor);
   engancharApertura(motor);
 
   await shell.refrescar();
-  return { motor, escenario, shell };
+  return { motor, escenario, shell, atajos, transporte, reanudar };
 }
 
 /**

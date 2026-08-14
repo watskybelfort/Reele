@@ -32,6 +32,7 @@ export function initTransporte(motor, opciones = {}) {
   const btnSilencio = $('#btn-silencio');
   const btnSubtitulos = $('#btn-subtitulos');
   const btnPistas = $('#btn-pistas');
+  const btnVelocidad = $('#btn-velocidad');
   const btnMini = $('#btn-mini');
   const btnPantalla = $('#btn-pantalla');
 
@@ -292,6 +293,35 @@ export function initTransporte(motor, opciones = {}) {
 
   pistasAudio?.onCambio(pintarPistas);
 
+  // --- Velocidad ------------------------------------------------------------
+
+  function pintarVelocidad() {
+    const v = player.rate;
+    // "1.5x" y no "1.50x": el cero de mas no aporta y ensancha el boton.
+    btnVelocidad.textContent = `${Number(v.toFixed(2))}x`;
+    btnVelocidad.dataset.alterada = String(Math.abs(v - 1) > 0.001);
+    btnVelocidad.title = v === 1 ? 'Velocidad normal' : `Velocidad: ${Number(v.toFixed(2))}x`;
+    btnVelocidad.setAttribute('aria-label', btnVelocidad.title);
+  }
+
+  btnVelocidad.addEventListener('click', () => {
+    abrirMenu({
+      titulo: 'Velocidad',
+      ancla: btnVelocidad,
+      items: (opciones.velocidades ?? [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]).map((v) => ({
+        texto: `${Number(v.toFixed(2))}x`,
+        detalle: v === 1 ? 'normal' : undefined,
+        marcado: Math.abs(player.rate - v) < 0.001,
+        onElegir: () => {
+          motor.setRate(v);
+          pintarVelocidad();
+        },
+      })),
+    });
+  });
+
+  player.on('rate', pintarVelocidad);
+
   window.reele.window.onMini(({ mini }) => {
     btnMini.setAttribute('aria-pressed', String(mini));
     btnMini.title = mini ? 'Volver a la ventana completa' : 'Mini reproductor';
@@ -332,8 +362,9 @@ export function initTransporte(motor, opciones = {}) {
   pintarModos();
   pintarSubtitulos();
   pintarPistas();
+  pintarVelocidad();
 
-  return { pintarVideo, pintarVolumen, pintarModos, pintarSubtitulos, pintarPistas };
+  return { pintarVideo, pintarVolumen, pintarModos, pintarSubtitulos, pintarPistas, pintarVelocidad };
 }
 
 /** La segunda linea: episodio, ano, resolucion y carpeta. */
