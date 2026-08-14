@@ -1,0 +1,113 @@
+{
+  "name": "reele",
+  "productName": "Reele",
+  "version": "0.1.0",
+  "description": "Reproductor de video de escritorio para Windows con acrilico real de DWM",
+  "author": "MxrningStar",
+  "license": "MIT",
+  "private": true,
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "icono": "electron tools/hacer-icono.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.mxrningstar.reele",
+    "productName": "Reele",
+    "copyright": "Copyright (c) 2026 MxrningStar",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "tools/acrylic-native.ps1",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "Reele-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Reele",
+      "uninstallDisplayName": "Reele",
+      "deleteAppDataOnUninstall": false
+    },
+    "fileAssociations": [
+      {
+        "ext": "mp4",
+        "name": "Video MP4",
+        "description": "Video MP4",
+        "role": "Viewer",
+        "mimeType": "video/mp4",
+        "icon": "build/icon.ico"
+      },
+      {
+        "ext": "m4v",
+        "name": "Video M4V",
+        "description": "Video MPEG-4",
+        "role": "Viewer",
+        "mimeType": "video/x-m4v",
+        "icon": "build/icon.ico"
+      },
+      {
+        "ext": "mov",
+        "name": "Video QuickTime",
+        "description": "Video QuickTime",
+        "role": "Viewer",
+        "mimeType": "video/quicktime",
+        "icon": "build/icon.ico"
+      },
+      {
+        "ext": "mkv",
+        "name": "Video Matroska",
+        "description": "Video Matroska",
+        "role": "Viewer",
+        "mimeType": "video/x-matroska",
+        "icon": "build/icon.ico"
+      },
+      {
+        "ext": "webm",
+        "name": "Video WebM",
+        "description": "Video WebM",
+        "role": "Viewer",
+        "mimeType": "video/webm",
+        "icon": "build/icon.ico"
+      },
+      {
+        "ext": "ogv",
+        "name": "Video OGV",
+        "description": "Video Ogg Theora",
+        "role": "Viewer",
+        "mimeType": "video/ogg",
+        "icon": "build/icon.ico"
+      }
+    ]
+  }
+}
