@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="styles/escenario.css">
   <link rel="stylesheet" href="styles/menu.css">
   <link rel="stylesheet" href="styles/ajustes.css">
+  <link rel="stylesheet" href="styles/dialogo.css">
   <link rel="stylesheet" href="styles/titlebar.css">
   <link rel="stylesheet" href="styles/transport.css">
 </head>
@@ -75,6 +76,20 @@
           <span class="lateral__texto">Seguir viendo</span>
           <span class="lateral__cuenta tabular" id="cuenta-seguir"></span>
         </button>
+        <button class="lateral__item" id="nav-favoritos" aria-current="false">
+          <span class="lateral__icono" id="icono-favoritos" aria-hidden="true"></span>
+          <span class="lateral__texto">Favoritos</span>
+          <span class="lateral__cuenta tabular" id="cuenta-favoritos"></span>
+        </button>
+      </div>
+
+      <div class="lateral__grupo">
+        <span class="lateral__titulo">
+          Listas
+          <button class="lateral__accion" id="btn-nueva-lista"
+                  title="Nueva lista" aria-label="Nueva lista"></button>
+        </span>
+        <div class="lateral__listas" id="lista-listas"></div>
       </div>
 
       <div class="lateral__grupo">
@@ -149,6 +164,8 @@
         <div class="ahora__titulo truncar" id="ahora-titulo">Nada abierto</div>
         <div class="ahora__detalle truncar" id="ahora-detalle">Elige un video y dale al play</div>
       </div>
+      <button class="icono-btn ahora__fav" id="btn-favorito" aria-pressed="false" disabled
+              title="Anadir a favoritos" aria-label="Anadir a favoritos"></button>
     </div>
 
     <div class="mandos">

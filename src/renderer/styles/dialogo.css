@@ -1,0 +1,64 @@
+/* ============================================================================
+ * REELE · DIALOGOS
+ * Pequenos, centrados y con el estilo de la aplicacion. Ver js/dialogo.js
+ * para por que no se usan los del navegador.
+ * ==========================================================================*/
+
+.dialogo__velo {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: grid;
+  place-items: center;
+  padding: 40px 20px;
+  background: rgb(0 0 0 / 0.42);
+  animation: velo-entra var(--dur-2) var(--ease-out);
+}
+
+.dialogo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(400px, 100%);
+  padding: 22px;
+  animation: ajustes-entra var(--dur-3) var(--ease-out);
+}
+
+.dialogo__titulo {
+  font-size: 17px;
+}
+
+.dialogo__texto {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--texto-2);
+}
+
+.dialogo__campo {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--realce-borde-fuerte);
+  border-radius: var(--radio-1);
+  background: var(--vidrio-3);
+  color: var(--texto);
+  font-size: 13px;
+  user-select: text;
+  cursor: text;
+}
+
+.dialogo__campo:focus {
+  border-color: rgb(var(--acento) / 0.8);
+}
+
+.dialogo__botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* Borrar algo no puede tener el mismo color que guardar algo. */
+.boton--peligroso {
+  background: #c42b1c;
+  color: #fff;
+}

@@ -10,9 +10,11 @@
 import { $, el, glifo, pintarGlifo, plural, formatoLargo } from './dom.js';
 import { crearLista } from './lista.js';
 import { crearSondeo } from './sondeo.js';
+import { abrirMenu } from './menu.js';
+import { preguntar, confirmar } from './dialogo.js';
 
-/** El titulo de la cabecera segun la vista. Las carpetas usan su nombre. */
-const TITULOS = { videos: 'Videos', seguir: 'Seguir viendo' };
+/** El titulo de la cabecera segun la vista. Las carpetas y listas usan su nombre. */
+const TITULOS = { videos: 'Videos', seguir: 'Seguir viendo', favoritos: 'Favoritos' };
 
 /**
  * El vacio se explica distinto en cada vista.
@@ -24,10 +26,12 @@ const TITULOS = { videos: 'Videos', seguir: 'Seguir viendo' };
 const VACIOS = {
   videos: ['Aqui todavia no hay nada', 'Anade una carpeta con tus videos o suelta archivos en la ventana.'],
   seguir: ['No has dejado nada a medias', 'Lo que pares por la mitad aparecera aqui para seguirlo donde lo dejaste.'],
+  favoritos: ['Sin favoritos', 'Marca con el corazon lo que quieras tener a mano.'],
+  lista: ['Esta lista esta vacia', 'Anade videos desde el menu del boton derecho.'],
   carpeta: ['Esta carpeta no tiene videos', 'Puede que solo tenga formatos que Chromium no sabe decodificar.'],
 };
 
-export function initShell(motor, ajustes) {
+export function initShell(motor, ajustes, { colecciones } = {}) {
   const raiz = document.documentElement;
   const cuerpo = $('#vista-cuerpo');
   const titulo = $('#vista-titulo');
@@ -37,7 +41,9 @@ export function initShell(motor, ajustes) {
   const escaneoTexto = $('#escaneo-texto');
   const cuentaVideos = $('#cuenta-videos');
   const cuentaSeguir = $('#cuenta-seguir');
+  const cuentaFavoritos = $('#cuenta-favoritos');
   const listaCarpetas = $('#lista-carpetas');
+  const listaListas = $('#lista-listas');
 
   let videos = [];
   let carpetas = [];
@@ -56,6 +62,8 @@ export function initShell(motor, ajustes) {
 
   pintarGlifo($('#icono-videos'), 'video');
   pintarGlifo($('#icono-seguir'), 'reproducir');
+  pintarGlifo($('#icono-favoritos'), 'corazon');
+  pintarGlifo($('#btn-nueva-lista'), 'anadir');
   pintarGlifo($('#icono-anadir'), 'anadir');
   pintarGlifo($('#icono-abrir'), 'abrir');
   pintarGlifo($('#icono-buscar'), 'buscar');
@@ -74,6 +82,8 @@ export function initShell(motor, ajustes) {
       // video empieza a sonar con la biblioteca todavia en pantalla.
       motor.queue.setContext(enPantalla, { startIndex: indice });
     },
+    onFavorito: colecciones ? (video) => colecciones.alternar(video?.id) : undefined,
+    onMenu: (video, indice, evento) => menuDeVideo(video, indice, evento),
     onOrden: ({ por, dir }) => {
       if (por === 'ninguno') return;
       ordenUsuario = { por, dir };
@@ -110,7 +120,7 @@ export function initShell(motor, ajustes) {
 
   function pintarResumen() {
     const enPantalla = lista.visibles;
-    titulo.textContent = vista.tipo === 'carpeta' ? vista.nombre : TITULOS[vista.tipo] ?? 'Videos';
+    titulo.textContent = vista.nombre ?? TITULOS[vista.tipo] ?? 'Videos';
 
     if (!enPantalla.length) {
       resumen.textContent = videos.length ? 'Nada que encaje con la busqueda' : 'Sin videos todavia';
@@ -141,17 +151,33 @@ export function initShell(motor, ajustes) {
     if (vista.tipo === 'seguir') {
       // El orden lo da la lista de ids, que ya viene de lo mas reciente a lo
       // mas antiguo. Se mapea en vez de filtrar para no perderlo.
-      const porId = new Map(videos.map((v) => [v.id, v]));
-      return seguirViendo.map((id) => porId.get(id)).filter(Boolean);
+      return porIds(seguirViendo);
+    }
+    if (vista.tipo === 'favoritos') {
+      return videos.filter((v) => colecciones?.tiene(v.id));
+    }
+    if (vista.tipo === 'lista') {
+      const guardada = colecciones?.lista(vista.id);
+      // Igual que arriba: el orden de una lista lo puso el usuario a mano y
+      // es lo unico que la distingue de un filtro cualquiera.
+      return guardada ? porIds(guardada.tracks) : [];
     }
     return videos;
   }
 
+  function porIds(ids) {
+    const indice = new Map(videos.map((v) => [v.id, v]));
+    return ids.map((id) => indice.get(id)).filter(Boolean);
+  }
+
+  /** Vistas donde el orden ES la informacion y no se debe tocar. */
+  const ORDEN_PROPIO = new Set(['seguir', 'lista']);
+
   function setVista(nueva) {
     vista = nueva;
-    // En "Seguir viendo" el orden ES la informacion: reordenarlo
-    // alfabeticamente lo convertiria en otra lista cualquiera.
-    if (vista.tipo === 'seguir') lista.setOrden('ninguno');
+    // Reordenar alfabeticamente "Seguir viendo" o una lista hecha a mano las
+    // convertiria en otra lista cualquiera.
+    if (ORDEN_PROPIO.has(vista.tipo)) lista.setOrden('ninguno');
     else lista.setOrden(ordenUsuario.por, ordenUsuario.dir);
     lista.setVideos(fuente());
     pintarNavegacion();
@@ -165,13 +191,182 @@ export function initShell(motor, ajustes) {
   function pintarNavegacion() {
     $('#nav-videos').setAttribute('aria-current', String(vista.tipo === 'videos'));
     $('#nav-seguir').setAttribute('aria-current', String(vista.tipo === 'seguir'));
+    $('#nav-favoritos').setAttribute('aria-current', String(vista.tipo === 'favoritos'));
     for (const nodo of listaCarpetas.querySelectorAll('.carpeta')) {
       nodo.dataset.activa = String(vista.tipo === 'carpeta' && nodo.dataset.ruta === vista.ruta);
+    }
+    for (const nodo of listaListas.querySelectorAll('.lateral__item')) {
+      nodo.setAttribute('aria-current', String(vista.tipo === 'lista' && nodo.dataset.id === vista.id));
     }
   }
 
   $('#nav-videos').addEventListener('click', () => setVista({ tipo: 'videos' }));
   $('#nav-seguir').addEventListener('click', () => setVista({ tipo: 'seguir' }));
+  $('#nav-favoritos').addEventListener('click', () => setVista({ tipo: 'favoritos' }));
+
+  // --- Listas ---------------------------------------------------------------
+
+  function pintarListas() {
+    const listas = colecciones?.listas ?? [];
+    listaListas.replaceChildren(...listas.map((guardada) => el('button', {
+      class: 'lateral__item',
+      dataset: { id: guardada.id },
+      'aria-current': 'false',
+      title: guardada.name,
+      onClick: () => setVista({ tipo: 'lista', id: guardada.id, nombre: guardada.name }),
+      onContextmenu: (e) => {
+        e.preventDefault();
+        menuDeLista(guardada, e);
+      },
+    }, [
+      el('span', { class: 'lateral__icono', texto: glifo('lista'), 'aria-hidden': 'true' }),
+      el('span', { class: 'lateral__texto', texto: guardada.name }),
+      el('span', { class: 'lateral__cuenta tabular', texto: guardada.tracks.length ? String(guardada.tracks.length) : '' }),
+    ])));
+    pintarNavegacion();
+  }
+
+  function menuDeLista(guardada, evento) {
+    abrirMenu({
+      x: evento.clientX,
+      y: evento.clientY,
+      items: [
+        {
+          texto: 'Reproducir la lista',
+          onElegir: () => {
+            const videos_ = porIds(guardada.tracks);
+            if (videos_.length) motor.queue.setContext(videos_, { startIndex: 0 });
+          },
+        },
+        { separador: true },
+        {
+          texto: 'Cambiar el nombre',
+          onElegir: async () => {
+            const nombre = await preguntar({
+              titulo: 'Cambiar el nombre',
+              valor: guardada.name,
+            });
+            if (nombre) await colecciones.renombrar(guardada.id, nombre);
+          },
+        },
+        {
+          texto: 'Borrar la lista',
+          onElegir: async () => {
+            const si = await confirmar({
+              titulo: `Borrar "${guardada.name}"`,
+              texto: 'Solo se borra la lista. Los archivos no se tocan.',
+              aceptar: 'Borrar',
+              peligroso: true,
+            });
+            if (!si) return;
+            await colecciones.quitar(guardada.id);
+            if (vista.tipo === 'lista' && vista.id === guardada.id) setVista({ tipo: 'videos' });
+          },
+        },
+      ],
+    });
+  }
+
+  $('#btn-nueva-lista').addEventListener('click', async () => {
+    const nombre = await preguntar({
+      titulo: 'Nueva lista',
+      texto: 'Una lista guarda referencias, no copias: los archivos se quedan donde estan.',
+      placeholder: 'Nombre de la lista',
+      aceptar: 'Crear',
+    });
+    if (!nombre) return;
+    const creada = await colecciones.crear(nombre, []);
+    if (creada) setVista({ tipo: 'lista', id: creada.id, nombre: creada.name });
+  });
+
+  // --- Menu de un video -----------------------------------------------------
+
+  function menuDeVideo(video, indice, evento) {
+    if (!video) return;
+    const enLista = vista.tipo === 'lista';
+
+    abrirMenu({
+      x: evento.clientX,
+      y: evento.clientY,
+      items: [
+        {
+          texto: 'Reproducir',
+          onElegir: () => motor.queue.setContext(lista.visibles, { startIndex: indice }),
+        },
+        {
+          texto: 'Ver a continuacion',
+          onElegir: () => motor.queue.addNext(video),
+        },
+        {
+          texto: 'Anadir al final de la cola',
+          onElegir: () => motor.queue.addLast(video),
+        },
+        { separador: true },
+        {
+          texto: colecciones?.tiene(video.id) ? 'Quitar de favoritos' : 'Anadir a favoritos',
+          onElegir: () => colecciones?.alternar(video.id),
+        },
+        {
+          texto: 'Anadir a una lista…',
+          onElegir: () => menuDeListas(video, evento),
+        },
+        enLista ? {
+          texto: 'Quitar de esta lista',
+          onElegir: async () => {
+            const guardada = colecciones.lista(vista.id);
+            const real = guardada?.tracks.indexOf(video.id) ?? -1;
+            if (real >= 0) await colecciones.quitarEn(vista.id, real);
+          },
+        } : null,
+        { separador: true },
+        {
+          texto: 'Abrir la ubicacion del archivo',
+          onElegir: () => window.reele.library.reveal(video.path),
+        },
+        {
+          texto: 'Empezar de cero la proxima vez',
+          desactivado: !(lista.nodo && video.id),
+          onElegir: async () => {
+            await window.reele.progreso.olvidar(video.id);
+            await refrescarProgreso();
+          },
+        },
+      ].filter(Boolean),
+    });
+  }
+
+  /**
+   * El segundo menu, para elegir a que lista va.
+   *
+   * Se abre encima del primero en vez de colgar de el como submenu: un menu
+   * de un solo nivel se coloca solo, se cierra solo y se recorre con el
+   * teclado sin inventar nada. Los submenus con su temporizador de apertura
+   * son mucho codigo para dos clics al mes.
+   */
+  function menuDeListas(video, evento) {
+    const listas = colecciones?.listas ?? [];
+    abrirMenu({
+      titulo: 'Anadir a',
+      x: evento.clientX,
+      y: evento.clientY,
+      items: [
+        ...listas.map((guardada) => ({
+          texto: guardada.name,
+          detalle: guardada.tracks.includes(video.id) ? 'ya esta' : undefined,
+          desactivado: guardada.tracks.includes(video.id),
+          onElegir: () => colecciones.anadir(guardada.id, video.id),
+        })),
+        listas.length ? { separador: true } : null,
+        {
+          texto: 'Lista nueva…',
+          onElegir: async () => {
+            const nombre = await preguntar({ titulo: 'Nueva lista', aceptar: 'Crear' });
+            if (nombre) await colecciones.crear(nombre, [video.id]);
+          },
+        },
+      ].filter(Boolean),
+    });
+  }
 
   // --- Carpetas -------------------------------------------------------------
 
@@ -296,6 +491,35 @@ export function initShell(motor, ajustes) {
 
   window.reele.library.onChanged(() => refrescar());
 
+  // --- Favoritos y listas al dia --------------------------------------------
+
+  function pintarFavoritos() {
+    const cuantos = colecciones?.favoritos.size ?? 0;
+    cuentaFavoritos.textContent = cuantos ? String(cuantos) : '';
+    lista.setFavoritos(colecciones?.favoritos);
+  }
+
+  colecciones?.on('favoritos', () => {
+    pintarFavoritos();
+    // Estando en Favoritos, quitar uno tiene que sacarlo de la lista, no solo
+    // apagarle el corazon.
+    if (vista.tipo === 'favoritos') lista.setVideos(fuente());
+  });
+
+  colecciones?.on('listas', () => {
+    pintarListas();
+    if (vista.tipo !== 'lista') return;
+    const guardada = colecciones.lista(vista.id);
+    // La lista que se estaba mirando puede haber desaparecido desde otra
+    // ventana o haber cambiado de nombre.
+    if (!guardada) setVista({ tipo: 'videos' });
+    else {
+      vista = { ...vista, nombre: guardada.name };
+      lista.setVideos(fuente());
+      pintarResumen();
+    }
+  });
+
   // --- Sondeo ---------------------------------------------------------------
 
   /**
@@ -347,7 +571,9 @@ export function initShell(motor, ajustes) {
     cuentaVideos.textContent = videos.length ? String(videos.length) : '';
     cuentaSeguir.textContent = seguirViendo.length ? String(seguirViendo.length) : '';
     lista.setProgreso(marcas);
+    pintarFavoritos();
     pintarCarpetas();
+    pintarListas();
     lista.setVideos(fuente());
     ocultarEscaneo();
 

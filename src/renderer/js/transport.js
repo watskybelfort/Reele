@@ -14,7 +14,7 @@ import { PASO_RETARDO } from './subtitulos.js';
 
 export function initTransporte(motor, opciones = {}) {
   const { player, queue } = motor;
-  const { escenario, subtitulos, pistasAudio } = opciones;
+  const { escenario, subtitulos, pistasAudio, colecciones } = opciones;
 
   // La miniatura y el boton de volver al video son el mismo elemento: se
   // pulsa lo que se quiere recuperar. Ver la nota en transport.css.
@@ -33,6 +33,7 @@ export function initTransporte(motor, opciones = {}) {
   const btnSubtitulos = $('#btn-subtitulos');
   const btnPistas = $('#btn-pistas');
   const btnVelocidad = $('#btn-velocidad');
+  const btnFavorito = $('#btn-favorito');
   const btnMini = $('#btn-mini');
   const btnPantalla = $('#btn-pantalla');
 
@@ -322,6 +323,22 @@ export function initTransporte(motor, opciones = {}) {
 
   player.on('rate', pintarVelocidad);
 
+  // --- Favorito -------------------------------------------------------------
+
+  function pintarFavorito() {
+    const track = player.track;
+    const marcado = !!track && !!colecciones?.tiene(track.id);
+    btnFavorito.disabled = !track;
+    pintarGlifo(btnFavorito, marcado ? 'corazonLleno' : 'corazon');
+    btnFavorito.setAttribute('aria-pressed', String(marcado));
+    const etiqueta = marcado ? 'Quitar de favoritos' : 'Anadir a favoritos';
+    btnFavorito.title = etiqueta;
+    btnFavorito.setAttribute('aria-label', etiqueta);
+  }
+
+  btnFavorito.addEventListener('click', () => colecciones?.alternar(player.track?.id));
+  colecciones?.on('favoritos', pintarFavorito);
+
   window.reele.window.onMini(({ mini }) => {
     btnMini.setAttribute('aria-pressed', String(mini));
     btnMini.title = mini ? 'Volver a la ventana completa' : 'Mini reproductor';
@@ -342,6 +359,7 @@ export function initTransporte(motor, opciones = {}) {
   player.on('trackchange', ({ track }) => {
     pintarVideo(track);
     pintarSubtitulos();
+    pintarFavorito();
   });
   player.on('duration', () => pintarTiempo());
   player.on('metadatos', ({ track }) => {
@@ -363,8 +381,12 @@ export function initTransporte(motor, opciones = {}) {
   pintarSubtitulos();
   pintarPistas();
   pintarVelocidad();
+  pintarFavorito();
 
-  return { pintarVideo, pintarVolumen, pintarModos, pintarSubtitulos, pintarPistas, pintarVelocidad };
+  return {
+    pintarVideo, pintarVolumen, pintarModos, pintarSubtitulos,
+    pintarPistas, pintarVelocidad, pintarFavorito,
+  };
 }
 
 /** La segunda linea: episodio, ano, resolucion y carpeta. */

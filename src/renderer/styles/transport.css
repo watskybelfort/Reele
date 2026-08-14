@@ -99,6 +99,17 @@
   color: var(--texto-3);
 }
 
+.ahora__fav {
+  flex: 0 0 auto;
+  font-size: 15px;
+}
+
+/* Sin nada cargado el corazon no tiene a que apuntar. */
+.ahora__fav[disabled] {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 /* ------------------------------------------------------------- controles */
 
 .mandos {

@@ -108,6 +108,25 @@ contextBridge.exposeInMainWorld('reele', {
     },
   },
 
+  // --- Favoritos ----------------------------------------------------------
+  favoritos: {
+    todos: () => ipcRenderer.invoke('coll:favorites'),
+    alternar: (id) => ipcRenderer.invoke('coll:toggle-favorite', id),
+    onCambio: (h) => on('coll:changed', h),
+  },
+
+  // --- Listas -------------------------------------------------------------
+  listas: {
+    todas: () => ipcRenderer.invoke('pl:all'),
+    crear: (nombre, ids) => ipcRenderer.invoke('pl:create', nombre, ids),
+    renombrar: (id, nombre) => ipcRenderer.invoke('pl:rename', id, nombre),
+    quitar: (id) => ipcRenderer.invoke('pl:remove', id),
+    anadir: (id, ids) => ipcRenderer.invoke('pl:add', id, ids),
+    quitarEn: (id, indice) => ipcRenderer.invoke('pl:remove-at', id, indice),
+    mover: (id, desde, hasta) => ipcRenderer.invoke('pl:move', id, desde, hasta),
+    onCambio: (h) => on('coll:playlists', h),
+  },
+
   // --- Por donde iba ------------------------------------------------------
   progreso: {
     de: (id) => ipcRenderer.invoke('prog:for', id),

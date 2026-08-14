@@ -12,6 +12,7 @@ const { registerSchemes, registerHandlers } = require('./protocols');
 const protocols = require('./protocols');
 const { Library } = require('./library');
 const { Progreso } = require('./progreso');
+const { Collections } = require('./collections');
 const taskbar = require('./taskbar');
 const bandeja = require('./bandeja');
 const despierto = require('./despierto');
@@ -32,6 +33,7 @@ let mainWindow = null;
 let settings = null;
 let library = null;
 let progreso = null;
+let collections = null;
 /** Distingue "cerrar la ventana" de "salir del programa" con la bandeja puesta. */
 let saliendo = false;
 /** Archivos que llegaron de un doble clic antes de que hubiera ventana. */
@@ -98,7 +100,13 @@ function main() {
     );
     progreso = new Progreso(progresoStore, settings);
 
-    registerIpc({ getWindow: () => mainWindow, settings, library, progreso });
+    const collectionsStore = new JsonStore(
+      path.join(app.getPath('userData'), 'collections.json'),
+      { version: 1, favorites: [], playlists: [] },
+    );
+    collections = new Collections(collectionsStore);
+
+    registerIpc({ getWindow: () => mainWindow, settings, library, progreso, collections });
 
     mainWindow = createMainWindow(settings);
     mainWindow.loadURL(APP_URL);
@@ -206,6 +214,7 @@ function cerrar() {
   if (settings) settings.save();
   if (library) library.persist();
   if (progreso) progreso.store.save();
+  if (collections) collections.store.save();
   // Sin esto Windows deja el distintivo pegado al icono hasta que el hueco de
   // la barra de tareas se recicla, que puede tardar.
   taskbar.limpiar(mainWindow);
@@ -279,7 +288,9 @@ async function escaneoInicial() {
   for (const track of library.all()) protocols.allowFile(track.path);
   // Lo que ya no esta en disco tampoco tiene que seguir en "seguir viendo":
   // sin esto la lista se llena de peliculas borradas que al pulsarlas fallan.
-  progreso?.podar(new Set(library.all().map((t) => t.id)));
+  const vivos = new Set(library.all().map((t) => t.id));
+  progreso?.podar(vivos);
+  collections?.prune(vivos);
   enviar('library:changed', { total: library.size() });
 }
 

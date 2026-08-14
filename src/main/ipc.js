@@ -25,7 +25,7 @@ const { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS, VELOCIDADES } = require('./defaul
  * `ctx` lleva { getWindow, settings, library }.
  */
 function registerIpc(ctx) {
-  const { getWindow, settings, library, progreso } = ctx;
+  const { getWindow, settings, library, progreso, collections } = ctx;
 
   const withWindow = (fn) => (...args) => {
     const win = getWindow();
@@ -259,6 +259,42 @@ function registerIpc(ctx) {
     const vivos = library.all().map((t) => t.thumb).filter(Boolean);
     return miniaturas.limpiar(vivos);
   });
+
+  // --- Favoritos y listas ---------------------------------------------------
+
+  ipcMain.handle('coll:favorites', () => collections.favoriteIds());
+
+  ipcMain.handle('coll:toggle-favorite', (_e, id) => {
+    const valor = collections.toggleFavorite(id);
+    emitir('coll:changed', { favorites: collections.favoriteIds() });
+    return valor;
+  });
+
+  /** Envolver cada cambio con el aviso evita que una lista se quede sin pintar. */
+  const conListas = (fn) => (...args) => {
+    const salida = fn(...args);
+    emitir('coll:playlists', { playlists: collections.playlists });
+    return salida;
+  };
+
+  ipcMain.handle('pl:all', () => collections.playlists);
+
+  ipcMain.handle('pl:create', conListas((_e, name, trackIds) =>
+    collections.createPlaylist(name, trackIds)));
+
+  ipcMain.handle('pl:rename', conListas((_e, id, name) =>
+    collections.renamePlaylist(id, name)));
+
+  ipcMain.handle('pl:remove', conListas((_e, id) => collections.removePlaylist(id)));
+
+  ipcMain.handle('pl:add', conListas((_e, id, trackIds) =>
+    collections.addToPlaylist(id, trackIds)));
+
+  ipcMain.handle('pl:remove-at', conListas((_e, id, indice) =>
+    collections.removeFromPlaylist(id, indice)));
+
+  ipcMain.handle('pl:move', conListas((_e, id, desde, hasta) =>
+    collections.movePlaylistTrack(id, desde, hasta)));
 
   // --- Por donde iba --------------------------------------------------------
 

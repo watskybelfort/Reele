@@ -13,6 +13,7 @@ import { crearReanudar } from './reanudar.js';
 import { crearAtajos } from './atajos.js';
 import { initSistema } from './sistema.js';
 import { crearAjustes } from './ajustes.js';
+import { crearColecciones } from './colecciones.js';
 import { $, pintarGlifo } from './dom.js';
 
 const raiz = document.documentElement;
@@ -50,8 +51,11 @@ async function boot() {
   const subtitulos = crearSubtitulos(motor.player, { ajustes });
   const pistasAudio = crearPistasAudio(motor.player, { ajustes });
   const { velocidades } = await window.reele.app.constants();
-  const transporte = initTransporte(motor, { escenario, subtitulos, pistasAudio, velocidades });
-  const shell = initShell(motor, ajustes);
+  const colecciones = await crearColecciones();
+  const transporte = initTransporte(motor, {
+    escenario, subtitulos, pistasAudio, velocidades, colecciones,
+  });
+  const shell = initShell(motor, ajustes, { colecciones });
 
   // Al pausar, al terminar y al cambiar de video pueden haber cambiado las
   // marcas de "por donde iba": la lista y el contador del lateral se
