@@ -7,7 +7,7 @@
  * eventos solo sirven para corregir despues de un salto o una pausa.
  */
 
-import { $, glifo, pintarGlifo, pintarSvg, formatoTiempo } from './dom.js';
+import { $, pintarGlifo, pintarSvg, formatoTiempo } from './dom.js';
 import { crearBarra } from './barra.js';
 import { abrirMenu } from './menu.js';
 import { PASO_RETARDO } from './subtitulos.js';

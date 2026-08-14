@@ -7,7 +7,23 @@ const { BrowserWindow, nativeTheme, screen } = require('electron');
 const { iconoVentana } = require('./iconos');
 
 const ROOT = path.join(__dirname, '..', '..');
-const NATIVE_SCRIPT = path.join(ROOT, 'tools', 'acrylic-native.ps1');
+
+/**
+ * El script nativo, con la ruta que PowerShell puede abrir de verdad.
+ *
+ * Empaquetada, la aplicacion vive dentro de app.asar. Electron parchea `fs`
+ * para que leer de ahi funcione como si fuera una carpeta, pero eso solo vale
+ * dentro del proceso: PowerShell es otro programa y para el app.asar es un
+ * archivo unico, no un directorio. Sin esta correccion, el modo de acrilico
+ * que sobrevive a perder el foco falla en la version instalada y solo en
+ * ella — en desarrollo funciona perfectamente, que es lo que hace que no se
+ * descubra hasta que alguien lo prueba instalado.
+ *
+ * `asarUnpack` en package.json deja la copia de verdad en app.asar.unpacked;
+ * aqui solo hay que apuntar ahi.
+ */
+const NATIVE_SCRIPT = path.join(ROOT, 'tools', 'acrylic-native.ps1')
+  .replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
 
 // Mas grande que en Sounde a proposito: aqui el contenido principal es una
 // imagen con proporcion fija, y por debajo de esto el video queda del tamano

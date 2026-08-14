@@ -1,7 +1,7 @@
 {
   "name": "reele",
   "productName": "Reele",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Reproductor de video de escritorio para Windows con acrilico real de DWM",
   "author": "MxrningStar",
   "license": "MIT",
@@ -30,6 +30,9 @@
       "src/**/*",
       "tools/acrylic-native.ps1",
       "package.json"
+    ],
+    "asarUnpack": [
+      "tools/acrylic-native.ps1"
     ],
     "extraResources": [
       {

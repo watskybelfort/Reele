@@ -8,7 +8,7 @@ npm run icono   # dibuja build/icon.ico a partir del codigo
 npm run dist    # deja el instalador en dist/
 ```
 
-Sale `dist/Reele-0.1.0-x64.exe`. Es un instalador NSIS **por usuario**: no pide
+Sale `dist/Reele-1.0.0-x64.exe`. Es un instalador NSIS **por usuario**: no pide
 administrador, se instala en `%LOCALAPPDATA%\Programs\Reele` y se desinstala
 desde Configuración como cualquier otra aplicación.
 
