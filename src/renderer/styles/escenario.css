@@ -139,6 +139,60 @@
   cursor: none;
 }
 
+/* ----------------------------------------------------------- subtitulos */
+
+/*
+ * Los subtitulos los pinta la aplicacion, no el <track> del navegador. La
+ * razon esta en js/subtitulos.js; lo que importa aqui es que son un div
+ * normal y se les puede dar tamano, posicion y fondo sin pelear con `::cue`.
+ *
+ * `--subs-base` lo escribe el JS midiendo el escenario. Con `vh` la letra
+ * saldria enorme en ventana pequena —el video ocupa un tercio de la altura
+ * de la pantalla pero vh sigue siendo la pantalla entera— y con `em` no
+ * escalaria al pasar a pantalla completa.
+ */
+.escenario__subs {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 7%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0 8%;
+  text-align: center;
+  pointer-events: none;
+  transition: bottom var(--dur-2) var(--ease-out);
+}
+
+.subs__linea {
+  padding: 0.08em 0.45em;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-family: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  font-size: calc(var(--subs-base, 20px) * var(--subs-escala, 1));
+  font-weight: 600;
+  line-height: 1.3;
+  /* La sombra no sobra aunque haya fondo: en un fotograma claro que asome
+     por los bordes del recuadro, el borde de la letra se difumina. */
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.9);
+  white-space: pre-wrap;
+}
+
+/*
+ * Con los mandos flotando sobre la imagen, los subtitulos suben.
+ *
+ * Si no, la barra de posicion se pone justo encima de la ultima linea cada
+ * vez que se mueve el raton, que es siempre que se busca algo.
+ */
+:root[data-pantalla='true'][data-mandos='visibles'] .escenario__subs,
+:root[data-mini='true'][data-mandos='visibles'] .escenario__subs {
+  bottom: calc(var(--alto-transporte) + 8px);
+}
+
 /* ---------------------------------------------------------------- pulso */
 
 /*

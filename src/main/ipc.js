@@ -12,6 +12,7 @@ const {
 } = require('./window');
 const protocols = require('./protocols');
 const miniaturas = require('./miniaturas');
+const subtitulos = require('./subtitulos');
 const { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS, VELOCIDADES } = require('./defaults');
 
 /**
@@ -196,6 +197,34 @@ function registerIpc(ctx) {
   ipcMain.handle('library:probe-done', async () => {
     const vivos = library.all().map((t) => t.thumb).filter(Boolean);
     return miniaturas.limpiar(vivos);
+  });
+
+  // --- Subtitulos -----------------------------------------------------------
+
+  /**
+   * Lo encontrado para cada video, por id.
+   *
+   * No es solo cache: es lo que convierte `subs:read` en algo seguro. El
+   * renderer manda un id de pista, nunca una ruta, asi que no puede pedir
+   * que se le lea un archivo cualquiera del disco — solo uno de los que la
+   * busqueda ya habia encontrado junto a ese video.
+   */
+  const subsPorVideo = new Map();
+
+  ipcMain.handle('subs:for', async (_e, videoId) => {
+    const track = videoId ? library.get(videoId) : null;
+    if (!track) return [];
+    const lista = await subtitulos.buscar(track.path);
+    subsPorVideo.set(videoId, lista);
+    // La ruta no sale de aqui: al renderer solo le hace falta con que
+    // llamarla en el menu y con que pedirla despues.
+    return lista.map(({ ruta, ...resto }) => resto);
+  });
+
+  ipcMain.handle('subs:read', async (_e, videoId, subId) => {
+    const pista = subsPorVideo.get(videoId)?.find((s) => s.id === subId);
+    if (!pista) return { ok: false, error: 'esa pista ya no esta', cues: [] };
+    return subtitulos.leer(pista.ruta);
   });
 
   // --- Varios -------------------------------------------------------------

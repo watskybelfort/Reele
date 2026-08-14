@@ -9,10 +9,12 @@
 
 import { $, glifo, pintarGlifo, pintarSvg, formatoTiempo } from './dom.js';
 import { crearBarra } from './barra.js';
+import { abrirMenu } from './menu.js';
+import { PASO_RETARDO } from './subtitulos.js';
 
 export function initTransporte(motor, opciones = {}) {
   const { player, queue } = motor;
-  const { escenario } = opciones;
+  const { escenario, subtitulos } = opciones;
 
   // La miniatura y el boton de volver al video son el mismo elemento: se
   // pulsa lo que se quiere recuperar. Ver la nota en transport.css.
@@ -28,6 +30,7 @@ export function initTransporte(motor, opciones = {}) {
   const btnAleatorio = $('#btn-aleatorio');
   const btnRepetir = $('#btn-repetir');
   const btnSilencio = $('#btn-silencio');
+  const btnSubtitulos = $('#btn-subtitulos');
   const btnMini = $('#btn-mini');
   const btnPantalla = $('#btn-pantalla');
 
@@ -41,6 +44,7 @@ export function initTransporte(motor, opciones = {}) {
   pintarGlifo(btnAleatorio, 'aleatorio');
   pintarGlifo(btnPantalla, 'aPantalla');
   pintarSvg(btnMini, 'mini');
+  pintarSvg(btnSubtitulos, 'subtitulos');
 
   // --- Posicion -------------------------------------------------------------
 
@@ -182,6 +186,75 @@ export function initTransporte(motor, opciones = {}) {
 
   btnPantalla.addEventListener('click', () => window.reele.window.togglePantalla());
 
+  // --- Subtitulos -----------------------------------------------------------
+
+  function pintarSubtitulos() {
+    const estado = subtitulos?.estado();
+    const activos = !!estado?.activaId && estado.encendidos;
+    btnSubtitulos.setAttribute('aria-pressed', String(activos));
+    btnSubtitulos.disabled = !player.track;
+    btnSubtitulos.title = !estado?.hay
+      ? 'Subtitulos: no hay ninguno junto a este video'
+      : activos ? 'Subtitulos: puestos' : 'Subtitulos: quitados';
+  }
+
+  btnSubtitulos.addEventListener('click', () => {
+    const estado = subtitulos?.estado();
+    if (!estado) return;
+
+    const items = [];
+
+    if (!estado.hay) {
+      /*
+       * Merece la pena explicarlo en vez de dejar el menu vacio.
+       *
+       * Chromium decodifica los subtitulos incrustados en un MKV pero no los
+       * publica en `textTracks`, asi que desde la pagina no hay forma de
+       * enumerarlos ni de encenderlos. Sin este aviso, quien sabe que su
+       * archivo lleva subtitulos dentro da por hecho que la aplicacion esta
+       * rota.
+       */
+      items.push({ texto: 'No hay archivos de subtitulos junto a este video', desactivado: true });
+      items.push({ texto: 'Los incrustados en el archivo no se pueden leer', desactivado: true });
+    } else {
+      items.push({
+        texto: 'Sin subtitulos',
+        marcado: !estado.activaId || !estado.encendidos,
+        onElegir: () => (estado.activaId ? subtitulos.setEncendidos(false) : null),
+      });
+      for (const pista of estado.pistas) {
+        items.push({
+          texto: pista.etiqueta,
+          detalle: pista.formato.toUpperCase(),
+          marcado: estado.activaId === pista.id && estado.encendidos,
+          onElegir: () => subtitulos.elegir(pista.id),
+        });
+      }
+      items.push({ separador: true });
+      items.push({
+        texto: 'Adelantar los subtitulos',
+        detalle: `${estado.retardo > 0 ? '+' : ''}${estado.retardo} ms`,
+        desactivado: !estado.activaId,
+        onElegir: () => subtitulos.ajustarRetardo(-PASO_RETARDO),
+      });
+      items.push({
+        texto: 'Atrasar los subtitulos',
+        desactivado: !estado.activaId,
+        onElegir: () => subtitulos.ajustarRetardo(PASO_RETARDO),
+      });
+      if (estado.retardo) {
+        items.push({
+          texto: 'Quitar el retardo',
+          onElegir: () => subtitulos.setRetardo(0),
+        });
+      }
+    }
+
+    abrirMenu({ items, ancla: btnSubtitulos, titulo: 'Subtitulos' });
+  });
+
+  subtitulos?.onCambio(pintarSubtitulos);
+
   window.reele.window.onMini(({ mini }) => {
     btnMini.setAttribute('aria-pressed', String(mini));
     btnMini.title = mini ? 'Volver a la ventana completa' : 'Mini reproductor';
@@ -199,7 +272,10 @@ export function initTransporte(motor, opciones = {}) {
     else pararBucle();
   });
 
-  player.on('trackchange', ({ track }) => pintarVideo(track));
+  player.on('trackchange', ({ track }) => {
+    pintarVideo(track);
+    pintarSubtitulos();
+  });
   player.on('duration', () => pintarTiempo());
   player.on('metadatos', ({ track }) => {
     // Al llegar los metadatos ya se conoce la resolucion real, que puede no
@@ -217,8 +293,9 @@ export function initTransporte(motor, opciones = {}) {
   pintarEstado(false);
   pintarVolumen();
   pintarModos();
+  pintarSubtitulos();
 
-  return { pintarVideo, pintarVolumen, pintarModos };
+  return { pintarVideo, pintarVolumen, pintarModos, pintarSubtitulos };
 }
 
 /** La segunda linea: episodio, ano, resolucion y carpeta. */

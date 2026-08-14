@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="styles/shell.css">
   <link rel="stylesheet" href="styles/lista.css">
   <link rel="stylesheet" href="styles/escenario.css">
+  <link rel="stylesheet" href="styles/menu.css">
   <link rel="stylesheet" href="styles/titlebar.css">
   <link rel="stylesheet" href="styles/transport.css">
 </head>
@@ -119,6 +120,7 @@
 
   <section class="escenario" id="escenario" data-encaje="contain" data-hay-video="false">
     <video class="escenario__video" id="video" playsinline></video>
+    <div class="escenario__subs" id="escenario-subs" aria-live="off" hidden></div>
     <div class="escenario__cargando" id="escenario-cargando" aria-hidden="true" hidden></div>
     <div class="escenario__pulso" id="escenario-pulso" aria-hidden="true"></div>
     <div class="escenario__error" id="escenario-error" role="alert" hidden></div>
@@ -163,6 +165,8 @@
     </div>
 
     <div class="extras">
+      <button class="icono-btn" id="btn-subtitulos" aria-pressed="false" aria-haspopup="menu" aria-expanded="false"
+              title="Subtitulos" aria-label="Subtitulos"></button>
       <button class="icono-btn" id="btn-silencio" aria-pressed="false" title="Silenciar" aria-label="Silenciar"></button>
       <div class="barra barra--fina extras__volumen" id="barra-volumen" role="slider" tabindex="0"
            aria-label="Volumen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80">

@@ -101,6 +101,12 @@ contextBridge.exposeInMainWorld('reele', {
     },
   },
 
+  // --- Subtitulos ---------------------------------------------------------
+  subtitulos: {
+    para: (videoId) => ipcRenderer.invoke('subs:for', videoId),
+    leer: (videoId, subId) => ipcRenderer.invoke('subs:read', videoId, subId),
+  },
+
   // --- App ----------------------------------------------------------------
   app: {
     info: () => ipcRenderer.invoke('app:info'),

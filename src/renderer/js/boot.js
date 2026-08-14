@@ -7,6 +7,7 @@ import { crearMotor } from './engine.js';
 import { crearEscenario } from './escenario.js';
 import { initTransporte } from './transport.js';
 import { initShell } from './shell.js';
+import { crearSubtitulos } from './subtitulos.js';
 import { $, pintarGlifo } from './dom.js';
 
 const raiz = document.documentElement;
@@ -41,7 +42,8 @@ async function boot() {
     ajustes,
     onVolumen: (v) => motor.setVolume(v),
   });
-  const transporte = initTransporte(motor, { escenario });
+  const subtitulos = crearSubtitulos(motor.player, { ajustes });
+  const transporte = initTransporte(motor, { escenario, subtitulos });
   const shell = initShell(motor, ajustes);
 
   /*

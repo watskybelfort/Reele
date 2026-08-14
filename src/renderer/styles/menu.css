@@ -1,0 +1,89 @@
+/* ============================================================================
+ * REELE · MENUS
+ * Flotan sobre la UI de la propia pagina, asi que aqui el backdrop-filter si
+ * tiene pixeles que difuminar. Ver la nota en acrylic.css.
+ * ==========================================================================*/
+
+.menu {
+  position: fixed;
+  z-index: 120;
+  min-width: 190px;
+  max-width: 320px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 5px;
+  animation: menu-entra var(--dur-2) var(--ease-out);
+}
+
+@keyframes menu-entra {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.menu__titulo {
+  padding: 6px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--texto-3);
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0 10px 0 6px;
+  border-radius: var(--radio-1);
+  color: var(--texto-2);
+  font-size: 12.5px;
+  text-align: left;
+  transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+
+.menu__item:hover:not([disabled]) {
+  background: var(--hover);
+  color: var(--texto);
+}
+
+.menu__item[aria-checked='true'] {
+  color: var(--texto);
+}
+
+.menu__item[disabled] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Hueco fijo para la marca: sin el, la fila marcada se desplaza respecto a
+   las demas y el menu entero parece torcido. */
+.menu__marca {
+  flex: 0 0 auto;
+  width: 16px;
+  color: rgb(var(--acento));
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  font-size: 9px;
+  text-align: center;
+}
+
+.menu__texto {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu__detalle {
+  flex: 0 0 auto;
+  color: var(--texto-3);
+  font-size: 11px;
+}
+
+.menu__separador {
+  height: 1px;
+  margin: 5px 8px;
+  background: var(--realce-borde);
+}
