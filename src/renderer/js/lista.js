@@ -387,6 +387,29 @@ export function crearLista(opciones = {}) {
       pintar();
     },
 
+    /**
+     * Cambia UN video en el sitio, sin rehacer la lista.
+     *
+     * Lo usa el sondeo, que va soltando duraciones y miniaturas de una en
+     * una. Pasar por setVideos en cada una volveria a ordenar y a filtrar
+     * todo, y —lo que se nota de verdad— devolveria el desplazamiento al
+     * principio y perderia la seleccion: la lista daria un salto por cada
+     * miniatura que aparece.
+     */
+    actualizar(video) {
+      if (!video?.id) return false;
+      let tocado = false;
+      for (const grupo of [todas, visibles]) {
+        const i = grupo.findIndex((v) => v.id === video.id);
+        if (i >= 0) {
+          grupo[i] = video;
+          tocado = true;
+        }
+      }
+      if (tocado) pintar();
+      return tocado;
+    },
+
     setProgreso(mapa) {
       progreso = mapa instanceof Map ? mapa : new Map(Object.entries(mapa ?? {}));
       pintar();
@@ -418,8 +441,26 @@ function subtitulo(track) {
   }
   if (track.year) partes.push(String(track.year));
   if (track.height) partes.push(`${track.height}p`);
-  if (track.etiquetas?.length) partes.push(track.etiquetas.slice(0, 2).join(' · '));
+  const extra = etiquetasUtiles(track).slice(0, 2);
+  if (extra.length) partes.push(extra.join(' · '));
   return partes.join(' · ') || track.fileName || '';
+}
+
+/** Lo que el nombre del archivo dice sobre la resolucion. */
+const ETIQUETA_RESOLUCION = /^(\d{3,4}[pi]|4K|8K|UHD|FHD|HD|SD)$/i;
+
+/**
+ * Las etiquetas que aportan algo, una vez sondeado el archivo.
+ *
+ * En cuanto se conoce la resolucion de verdad, la que venia en el nombre
+ * sobra — y ademas miente a menudo: un archivo llamado "1080p" que resulta
+ * ser 720p acababa ensenando "720p · 1080P" en la misma linea, que es
+ * justo la clase de detalle que hace dudar de todo lo demas.
+ */
+function etiquetasUtiles(track) {
+  const etiquetas = track.etiquetas ?? [];
+  if (!track.height) return etiquetas;
+  return etiquetas.filter((e) => !ETIQUETA_RESOLUCION.test(e));
 }
 
 function coincide(track, texto) {

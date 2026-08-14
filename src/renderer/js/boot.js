@@ -41,8 +41,20 @@ async function boot() {
     ajustes,
     onVolumen: (v) => motor.setVolume(v),
   });
-  initTransporte(motor, { escenario });
+  const transporte = initTransporte(motor, { escenario });
   const shell = initShell(motor, ajustes);
+
+  /*
+   * El sondeo puede terminar DESPUES de que el video ya este en pantalla:
+   * pasa siempre al abrir un archivo con doble clic desde el Explorador. Sin
+   * esto, la ficha del transporte se queda con el marcador de posicion y sin
+   * duracion mientras la lista de detras ya ensena la miniatura buena.
+   */
+  window.reele.library.onEnriquecido((video) => {
+    if (motor.player.track?.id !== video.id) return;
+    motor.player.track = video;
+    transporte.pintarVideo(video);
+  });
 
   engancharTitulo(motor);
   engancharApertura(motor);

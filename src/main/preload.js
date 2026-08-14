@@ -79,6 +79,12 @@ contextBridge.exposeInMainWorld('reele', {
     onProgress: (h) => on('library:progress', h),
     onChanged: (h) => on('library:changed', h),
 
+    // --- Sondeo -----------------------------------------------------------
+    pendientes: () => ipcRenderer.invoke('library:pending'),
+    sondeado: (datos) => ipcRenderer.invoke('library:probed', datos),
+    finSondeo: () => ipcRenderer.invoke('library:probe-done'),
+    onEnriquecido: (h) => on('library:enriched', h),
+
     /**
      * Desde Electron 32 los objetos File ya no traen `.path`. La unica via
      * legitima para saber que se solto es esta, y solo existe en el preload.

@@ -177,7 +177,6 @@ class Library {
     if (Number.isFinite(datos.width) && datos.width > 0) track.width = datos.width;
     if (Number.isFinite(datos.height) && datos.height > 0) track.height = datos.height;
     if (datos.thumb) track.thumb = datos.thumb;
-    if (Array.isArray(datos.colores) && datos.colores.length) track.colores = datos.colores;
     track.sondeado = true;
 
     this.store.merge({ version: LIBRARY_VERSION, tracks: this.all() });
@@ -235,7 +234,6 @@ function describir({ id, file, stat, previo }) {
     width: mismoContenido ? previo.width ?? null : null,
     height: mismoContenido ? previo.height ?? null : null,
     thumb: mismoContenido ? previo.thumb ?? null : null,
-    colores: mismoContenido ? previo.colores ?? null : null,
     sondeado: mismoContenido ? !!previo.sondeado : false,
   };
 }

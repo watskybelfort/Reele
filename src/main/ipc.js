@@ -11,6 +11,7 @@ const {
   togglePantallaCompleta,
 } = require('./window');
 const protocols = require('./protocols');
+const miniaturas = require('./miniaturas');
 const { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS, VELOCIDADES } = require('./defaults');
 
 /**
@@ -161,6 +162,40 @@ function registerIpc(ctx) {
   ipcMain.handle('library:reveal', (_e, ruta) => {
     if (typeof ruta === 'string' && ruta) shell.showItemInFolder(ruta);
     return true;
+  });
+
+  // --- Sondeo ---------------------------------------------------------------
+
+  /** Los que aun no han pasado por el decodificador del renderer. */
+  ipcMain.handle('library:pending', () => library.pendientes().map(paraCliente));
+
+  /**
+   * El renderer devuelve lo que averiguo abriendo el archivo.
+   *
+   * Se contesta con el video ya actualizado en vez de con un simple `ok`: la
+   * lista necesita la URL nueva de la miniatura para pintar esa fila, y
+   * pedirla en otra vuelta seria un IPC mas por cada video de la biblioteca.
+   */
+  ipcMain.handle('library:probed', async (_e, datos) => {
+    if (!datos?.id) return null;
+    const thumb = datos.thumb ? await miniaturas.guardar(datos.thumb) : null;
+    const track = library.enriquecer(datos.id, { ...datos, thumb });
+    if (!track) return null;
+    const paraFuera = paraCliente(track);
+    emitir('library:enriched', paraFuera);
+    return paraFuera;
+  });
+
+  /**
+   * Fin de la tanda: es el momento de tirar los fotogramas huerfanos.
+   *
+   * Se hace aqui y no al escanear porque hasta que el sondeo termina hay
+   * videos con miniatura recien creada que la biblioteca todavia no tiene
+   * apuntada, y una limpieza en ese momento se las llevaria por delante.
+   */
+  ipcMain.handle('library:probe-done', async () => {
+    const vivos = library.all().map((t) => t.thumb).filter(Boolean);
+    return miniaturas.limpiar(vivos);
   });
 
   // --- Varios -------------------------------------------------------------

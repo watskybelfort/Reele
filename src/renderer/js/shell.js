@@ -9,6 +9,7 @@
 
 import { $, el, glifo, pintarGlifo, plural, formatoLargo } from './dom.js';
 import { crearLista } from './lista.js';
+import { crearSondeo } from './sondeo.js';
 
 export function initShell(motor, ajustes) {
   const raiz = document.documentElement;
@@ -234,6 +235,32 @@ export function initShell(motor, ajustes) {
 
   window.reele.library.onChanged(() => refrescar());
 
+  // --- Sondeo ---------------------------------------------------------------
+
+  /**
+   * Va abriendo en segundo plano los videos que aun no tienen duracion ni
+   * portada. Se frena mientras hay algo en pantalla: decodificar dos videos
+   * a la vez le roba imagen al que el usuario esta mirando.
+   */
+  const sondeo = crearSondeo({
+    pausa: () => (motor.player.playing ? 900 : 120),
+    onVideo: (video) => actualizarVideo(video),
+  });
+
+  window.reele.library.onEnriquecido((video) => actualizarVideo(video));
+
+  let repintarResumen = 0;
+  function actualizarVideo(video) {
+    const i = videos.findIndex((v) => v.id === video.id);
+    if (i >= 0) videos[i] = video;
+    lista.actualizar(video);
+    // El resumen se recalcula agrupado: con doscientos videos sondeandose
+    // seguidos, recontarlo en cada uno es doscientas pasadas por la lista
+    // entera para cambiar un numero que nadie esta mirando todavia.
+    clearTimeout(repintarResumen);
+    repintarResumen = setTimeout(pintarResumen, 300);
+  }
+
   // --- Estado de reproduccion en la lista -----------------------------------
 
   motor.player.on('trackchange', ({ track }) => lista.setActual(track?.id, motor.player.playing));
@@ -257,6 +284,11 @@ export function initShell(motor, ajustes) {
     pintarCarpetas();
     lista.setVideos(fuente());
     ocultarEscaneo();
+
+    // Sin await: la biblioteca ya esta en pantalla y el sondeo puede tardar
+    // minutos en una coleccion grande. Esperarlo aqui dejaria la lista sin
+    // pintar hasta tener la ultima miniatura.
+    sondeo.arrancar();
     return videos;
   }
 
