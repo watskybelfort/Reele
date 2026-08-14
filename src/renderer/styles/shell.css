@@ -12,36 +12,50 @@
   --ancho-lateral: 236px;
   --ancho-lateral-min: 60px;
   --ancho-cola: 0px;
+  --alto-transporte: 88px;
 }
 
+/*
+ * La primera columna va en `auto`, no en var(--ancho-lateral).
+ *
+ * Asi la mide el propio lateral, que es quien lleva el ancho. Con la medida
+ * escrita en la rejilla, la columna existe aunque el lateral no: cuando el
+ * panel esta escondido —o simplemente todavia no se ha montado— queda una
+ * franja muerta de 236 pixeles a la izquierda del video.
+ */
 .app {
   display: grid;
-  grid-template-columns: var(--ancho-lateral) minmax(0, 1fr) var(--ancho-cola);
-  grid-template-rows: var(--alto-titulo) minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) var(--ancho-cola);
+  grid-template-rows: var(--alto-titulo) minmax(0, 1fr) var(--alto-transporte);
   grid-template-areas:
-    'titulo  titulo titulo'
-    'lateral vista  cola';
+    'titulo     titulo     titulo'
+    'lateral    vista      cola'
+    'transporte transporte transporte';
   height: 100vh;
-  transition: grid-template-columns var(--dur-2) var(--ease-in-out);
 }
 
 .app > .titlebar { grid-area: titulo; }
 .lateral { grid-area: lateral; }
 .vista { grid-area: vista; }
 
-:root[data-lateral='plegado'] .app {
-  grid-template-columns: var(--ancho-lateral-min) minmax(0, 1fr) var(--ancho-cola);
+:root[data-lateral='plegado'] {
+  --ancho-lateral: var(--ancho-lateral-min);
 }
+
+/* En pantalla completa y en mini la rejilla se reduce a la imagen. Las
+   reglas viven en escenario.css junto al resto de lo que hace cada modo. */
 
 /* ---------------------------------------------------------------- lateral */
 
 .lateral {
   display: flex;
   flex-direction: column;
+  width: var(--ancho-lateral);
   min-height: 0;
   padding: 6px 10px 10px;
   background: var(--vidrio-1);
   border-right: 1px solid var(--realce-borde);
+  transition: width var(--dur-2) var(--ease-in-out);
 }
 
 .lateral__grupo {

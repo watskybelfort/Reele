@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="es" data-focused="true" data-backdrop="acrylic" data-mini="false" data-pantalla="false" data-lateral="abierto">
+<html lang="es" data-focused="true" data-backdrop="acrylic" data-mini="false" data-pantalla="false"
+      data-lateral="abierto" data-escenario="false" data-mandos="visibles">
 <head>
   <meta charset="utf-8">
   <!-- CSP estricta: sin 'unsafe-inline'. Por eso en el codigo no hay ni un
@@ -17,7 +18,10 @@
   <link rel="stylesheet" href="styles/acrylic.css">
   <link rel="stylesheet" href="styles/base.css">
   <link rel="stylesheet" href="styles/shell.css">
+  <link rel="stylesheet" href="styles/lista.css">
+  <link rel="stylesheet" href="styles/escenario.css">
   <link rel="stylesheet" href="styles/titlebar.css">
+  <link rel="stylesheet" href="styles/transport.css">
 </head>
 <body>
 
@@ -50,15 +54,86 @@
     <div class="vista__cuerpo" id="vista-cuerpo">
       <div class="vacio">
         <span class="vacio__icono" aria-hidden="true">&#xE714;</span>
-        <h1 class="vacio__titulo">Reele</h1>
+        <h1 class="vacio__titulo">Nada abierto todavia</h1>
         <p class="vacio__texto">
-          Reproductor de video con el acrilico de Windows. Todavia no hay
-          biblioteca que ensenar.
+          Suelta un video en la ventana, abrelo desde aqui, o haz doble clic
+          en cualquier archivo del Explorador si has puesto Reele como
+          predeterminado.
         </p>
+        <div class="vacio__acciones">
+          <button class="boton boton--acento" id="btn-abrir-archivos">Abrir archivos</button>
+        </div>
       </div>
     </div>
   </section>
 
+  <section class="escenario" id="escenario" data-encaje="contain" data-hay-video="false">
+    <video class="escenario__video" id="video" playsinline></video>
+    <div class="escenario__cargando" id="escenario-cargando" aria-hidden="true" hidden></div>
+    <div class="escenario__pulso" id="escenario-pulso" aria-hidden="true"></div>
+    <div class="escenario__error" id="escenario-error" role="alert" hidden></div>
+    <button class="escenario__volver" id="btn-volver"
+            title="Volver a la biblioteca" aria-label="Volver a la biblioteca"></button>
+  </section>
+
+  <footer class="transporte">
+
+    <div class="ahora">
+      <button class="ahora__arte" id="btn-al-video" disabled
+              title="Volver al video" aria-label="Volver al video">
+        <img class="ahora__imagen" id="ahora-imagen" alt="" hidden>
+      </button>
+      <div class="ahora__textos">
+        <div class="ahora__titulo truncar" id="ahora-titulo">Nada abierto</div>
+        <div class="ahora__detalle truncar" id="ahora-detalle">Elige un video y dale al play</div>
+      </div>
+    </div>
+
+    <div class="mandos">
+      <div class="mandos__fila">
+        <button class="icono-btn" id="btn-aleatorio" aria-pressed="false" title="Aleatorio" aria-label="Aleatorio"></button>
+        <button class="icono-btn" id="btn-anterior" title="Anterior" aria-label="Anterior"></button>
+        <button class="mandos__reproducir" id="btn-reproducir" title="Reproducir" aria-label="Reproducir"></button>
+        <button class="icono-btn" id="btn-siguiente" title="Siguiente" aria-label="Siguiente"></button>
+        <button class="icono-btn" id="btn-repetir" aria-pressed="false" title="Repetir" aria-label="Repetir"></button>
+      </div>
+      <div class="mandos__tiempo tabular">
+        <span class="mandos__reloj" id="reloj-actual">0:00</span>
+        <div class="barra" id="barra-tiempo" role="slider" tabindex="0"
+             aria-label="Posicion" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
+          <div class="barra__pista">
+            <div class="barra__buffer"></div>
+            <div class="barra__relleno"></div>
+            <div class="barra__pomo"></div>
+          </div>
+          <div class="barra__globo tabular" id="globo-tiempo">0:00</div>
+        </div>
+        <span class="mandos__reloj" id="reloj-total">0:00</span>
+      </div>
+    </div>
+
+    <div class="extras">
+      <button class="icono-btn" id="btn-silencio" aria-pressed="false" title="Silenciar" aria-label="Silenciar"></button>
+      <div class="barra barra--fina extras__volumen" id="barra-volumen" role="slider" tabindex="0"
+           aria-label="Volumen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80">
+        <div class="barra__pista">
+          <div class="barra__relleno"></div>
+          <div class="barra__pomo"></div>
+        </div>
+      </div>
+      <button class="icono-btn" id="btn-mini" aria-pressed="false" title="Mini reproductor" aria-label="Mini reproductor"></button>
+      <button class="icono-btn" id="btn-pantalla" title="Pantalla completa" aria-label="Pantalla completa"></button>
+    </div>
+
+  </footer>
+
+</div>
+
+<div class="soltar" aria-hidden="true">
+  <div class="soltar__marco">
+    <span class="soltar__icono" id="soltar-icono"></span>
+    <span>Suelta los videos aqui</span>
+  </div>
 </div>
 
 <script type="module" src="js/boot.js"></script>

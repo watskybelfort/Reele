@@ -1,0 +1,343 @@
+/* ============================================================================
+ * REELE · TRANSPORTE
+ *
+ * La barra de abajo: lo que se esta viendo, los mandos y la barra de
+ * posicion. Es el UNICO juego de controles de la aplicacion: en ventana es
+ * una fila mas de la rejilla, y a pantalla completa o en mini pasa a flotar
+ * sobre la imagen y se esconde sola. Mantener dos superficies de mandos
+ * garantiza que una de las dos se quede atras, y siempre es la que mas se
+ * usa viendo una pelicula.
+ * ==========================================================================*/
+
+.transporte {
+  position: relative;
+  grid-area: transporte;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  background: var(--vidrio-2);
+  border-top: 1px solid var(--realce-borde);
+}
+
+/* ------------------------------------------------------ lo que se esta viendo */
+
+.ahora {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/*
+ * La miniatura ES el boton de volver al video.
+ *
+ * Se puede seguir viendo algo mientras se busca otra cosa en la biblioteca,
+ * asi que hace falta una vuelta. Ponerla aqui evita un boton mas en una
+ * barra que ya va llena, y es donde la mano va sola: se pulsa lo que se
+ * quiere recuperar.
+ */
+.ahora__arte {
+  position: relative;
+  flex: 0 0 auto;
+  width: 78px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--radio-1);
+  border: 1px solid var(--realce-borde);
+  background: var(--vidrio-3);
+  overflow: hidden;
+  transition: border-color var(--dur-1) var(--ease-out);
+}
+
+.ahora__arte:hover {
+  border-color: rgb(var(--acento) / 0.8);
+}
+
+.ahora__arte[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.ahora__imagen {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Marcador de posicion cuando aun no hay fotograma. */
+.ahora__arte::after {
+  content: '\E714';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--texto-3);
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  font-size: 17px;
+}
+
+.ahora__arte[data-con-arte='true']::after {
+  content: none;
+}
+
+.ahora__textos {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ahora__titulo {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ahora__detalle {
+  font-size: 11.5px;
+  color: var(--texto-3);
+}
+
+/* ------------------------------------------------------------- controles */
+
+.mandos {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mandos__fila {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mandos__reproducir {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  margin: 0 6px;
+  border-radius: var(--radio-full);
+  background: var(--texto);
+  color: #0b0e13;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  transition: transform var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out);
+}
+
+.mandos__reproducir:hover {
+  transform: scale(1.06);
+}
+
+.mandos__reproducir:active {
+  transform: scale(0.96);
+}
+
+.mandos__tiempo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  font-size: 11px;
+  color: var(--texto-3);
+}
+
+/* Ancho fijo y generoso: en video se pasa de la hora a menudo, y si el reloj
+   crece de 4 a 7 caracteres a mitad de reproduccion, la barra de posicion se
+   encoge de golpe y el pomo salta bajo el dedo. */
+.mandos__reloj {
+  flex: 0 0 auto;
+  min-width: 52px;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------- extras */
+
+.extras {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+
+.extras__volumen {
+  width: 92px;
+  margin-left: 4px;
+}
+
+/* ------------------------------------------------------------- la barra */
+
+/*
+ * Deslizador propio en vez de <input type=range>: hacen falta tres capas
+ * (buffer, relleno y pomo) y un globo con el tiempo bajo el cursor, y el
+ * range nativo solo deja pintar dos.
+ */
+.barra {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  touch-action: none;
+}
+
+.barra__pista {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: var(--radio-full);
+  background: rgb(255 255 255 / 0.13);
+  overflow: visible;
+}
+
+.barra__buffer,
+.barra__relleno {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radio-full);
+}
+
+.barra__buffer {
+  width: calc(var(--buffer, 0) * 100%);
+  background: rgb(255 255 255 / 0.13);
+}
+
+.barra__relleno {
+  width: calc(var(--valor, 0) * 100%);
+  background: rgb(var(--acento));
+}
+
+.barra__pomo {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--valor, 0) * 100%);
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: var(--radio-full);
+  background: #fff;
+  box-shadow: var(--sombra-1);
+  transform: translateY(-50%) scale(0);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+
+.barra:hover .barra__pomo,
+.barra:focus-visible .barra__pomo,
+.barra[data-arrastrando='true'] .barra__pomo {
+  transform: translateY(-50%) scale(1);
+}
+
+.barra[data-desactivada='true'] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Globo con el tiempo al que se saltaria. Va sobre la propia UI, asi que
+   aqui el backdrop-filter si tiene pixeles que difuminar. */
+.barra__globo {
+  position: absolute;
+  bottom: 20px;
+  left: calc(var(--preview, 0) * 100%);
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  border-radius: var(--radio-1);
+  background: rgb(var(--tinte) / 0.82);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--realce-borde-fuerte);
+  box-shadow: var(--sombra-2);
+  font-size: 11px;
+  color: var(--texto);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-1) var(--ease-out);
+}
+
+.barra:hover .barra__globo,
+.barra[data-arrastrando='true'] .barra__globo {
+  opacity: 1;
+}
+
+.barra--fina .barra__pista {
+  height: 3px;
+}
+
+.barra--fina .barra__pomo {
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+}
+
+/* ------------------------------------------------ flotando sobre el video */
+
+/*
+ * A pantalla completa y en mini, el transporte deja de ser una fila y pasa a
+ * flotar. `position: fixed` ademas lo saca del reparto de la rejilla, que es
+ * necesario: en esos modos la rejilla ya no tiene una area 'transporte' y un
+ * hijo con grid-area invalida se colocaria solo donde no debe.
+ */
+:root[data-pantalla='true'] .transporte,
+:root[data-mini='true'] .transporte {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  height: var(--alto-transporte);
+  border-top: none;
+  /* Degradado y no un panel: sobre una imagen en movimiento, un rectangulo
+     con borde recto corta la escena en dos. */
+  background: linear-gradient(to top, rgb(0 0 0 / 0.86), rgb(0 0 0 / 0.5) 60%, transparent);
+  backdrop-filter: blur(10px);
+  transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+
+:root[data-mandos='ocultos'] .transporte {
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+}
+
+/*
+ * En el mini no cabe una fila de tres columnas: 480 de ancho dan para los
+ * mandos y la barra, y nada mas. La ficha de la izquierda y los extras se
+ * van, que es informacion que ya esta en la propia imagen.
+ */
+:root[data-mini='true'] .transporte {
+  grid-template-columns: minmax(0, 1fr);
+  height: 74px;
+  padding: 0 10px;
+}
+
+:root[data-mini='true'] .ahora,
+:root[data-mini='true'] .extras {
+  display: none;
+}
+
+:root[data-mini='true'] .mandos__reproducir {
+  width: 32px;
+  height: 32px;
+  margin: 0 4px;
+  font-size: 12px;
+}
+
+:root[data-mini='true'] .mandos .icono-btn {
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+/* En ventanas estrechas el aleatorio y el repetir son lo primero que sobra:
+   se llega a los dos por atajo y por el menu. */
+@media (max-width: 1120px) {
+  .extras__volumen {
+    width: 70px;
+  }
+}

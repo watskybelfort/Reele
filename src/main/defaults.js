@@ -37,6 +37,10 @@ const DEFAULT_SETTINGS = {
   repeat: 'off', // 'off' | 'all' | 'one'
   shuffle: false,
   playbackRate: 1,
+  // Encadenar con el siguiente de la cola al terminar. En musica se da por
+  // hecho; en video no: al acabar un capitulo mucha gente quiere que pare
+  // ahi, no que arranque el siguiente a los dos segundos.
+  encadenar: true,
   // 'contain' respeta el encuadre y deja bandas; 'cover' llena la ventana
   // recortando. Por defecto no se recorta: nadie quiere perder subtitulos
   // quemados en la parte de abajo sin haberlo pedido.

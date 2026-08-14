@@ -1,0 +1,222 @@
+/* ============================================================================
+ * REELE · ESCENARIO
+ *
+ * La superficie donde se ve el video. Ocupa la misma celda que la biblioteca
+ * y se turnan.
+ *
+ * Las bandas del encuadre NO se pintan de negro en ventana: se dejan pasar el
+ * acrilico. Es la decision visual de la aplicacion — una pelicula 2.39:1
+ * flotando sobre el escritorio difuminado en vez de dentro de un rectangulo
+ * negro. A pantalla completa si van en negro, porque ahi detras no hay
+ * escritorio que ensenar y lo que se quiere es cine.
+ * ==========================================================================*/
+
+.escenario {
+  grid-area: vista;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: rgb(var(--tinte) / calc(var(--velo) * 0.35));
+}
+
+/* La biblioteca y el escenario comparten celda: solo uno de los dos existe. */
+:root[data-escenario='true'] .vista {
+  display: none;
+}
+
+:root:not([data-escenario='true']) .escenario {
+  display: none;
+}
+
+.escenario__video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+  /* Sin esto, arrastrar sobre la imagen empieza un arrastre de la propia
+     imagen y la capa de "suelta los videos aqui" se enciende sola. */
+  -webkit-user-drag: none;
+}
+
+.escenario[data-encaje='cover'] .escenario__video {
+  object-fit: cover;
+}
+
+/* Sin nada cargado, el elemento de video es un rectangulo negro. Se esconde
+   para que se vea el vidrio: al escenario solo se llega con algo abierto,
+   salvo en el mini, donde ese negro es el fondo correcto. */
+.escenario[data-hay-video='false'] .escenario__video {
+  visibility: hidden;
+}
+
+/* -------------------------------------------------------------- pantalla */
+
+:root[data-pantalla='true'] .app {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: 'vista';
+}
+
+:root[data-pantalla='true'] .lateral,
+:root[data-pantalla='true'] .vista {
+  display: none;
+}
+
+:root[data-pantalla='true'] .escenario {
+  background: #000;
+}
+
+/* ------------------------------------------------------------------ mini */
+
+:root[data-mini='true'] .app {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 30px minmax(0, 1fr);
+  grid-template-areas:
+    'titulo'
+    'vista';
+}
+
+:root[data-mini='true'] .lateral,
+:root[data-mini='true'] .vista,
+:root[data-mini='true'] .cola {
+  display: none;
+}
+
+/* En el mini el escenario esta siempre, aunque no se haya "abierto": la
+   ventana ES el video, no hay biblioteca a la que volver. */
+:root[data-mini='true'] .escenario {
+  display: flex;
+  background: #000;
+}
+
+/* --------------------------------------------------------------- volver */
+
+.escenario__volver {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radio-full);
+  background: rgb(0 0 0 / 0.42);
+  backdrop-filter: blur(14px);
+  color: #fff;
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity var(--dur-2) var(--ease-out), background var(--dur-1) var(--ease-out);
+}
+
+/* Solo asoma cuando el raton esta por encima del escenario: un boton fijo
+   sobre la imagen es una mancha permanente en mitad de la pelicula. */
+.escenario:hover .escenario__volver {
+  opacity: 1;
+}
+
+.escenario__volver:hover {
+  background: rgb(0 0 0 / 0.66);
+}
+
+/* En el mini no hay biblioteca detras a la que volver, y en pantalla
+   completa el gesto es salir de pantalla completa, no cerrar el video. */
+:root[data-mini='true'] .escenario__volver,
+:root[data-pantalla='true'] .escenario__volver,
+:root[data-mandos='ocultos'] .escenario__volver {
+  display: none;
+}
+
+/* Con los mandos escondidos el cursor tambien sobra: es lo que separa "ver
+   una pelicula" de "mirar una ventana". */
+:root[data-mandos='ocultos'] .escenario,
+:root[data-mandos='ocultos'] .escenario * {
+  cursor: none;
+}
+
+/* ---------------------------------------------------------------- pulso */
+
+/*
+ * El destello del centro al pulsar sobre la imagen.
+ *
+ * Sin el, un clic para pausar no cambia nada visible —el video se queda en el
+ * mismo fotograma— y parece que no ha funcionado.
+ */
+.escenario__pulso {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  border-radius: var(--radio-full);
+  background: rgb(0 0 0 / 0.5);
+  color: #fff;
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  font-size: 28px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.escenario__pulso--vivo {
+  animation: pulso-salir 620ms var(--ease-out) forwards;
+}
+
+@keyframes pulso-salir {
+  0% { opacity: 0.95; transform: scale(0.82); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+
+/* ------------------------------------------------------------- cargando */
+
+.escenario__cargando {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border: 3px solid rgb(255 255 255 / 0.18);
+  border-top-color: rgb(var(--acento));
+  border-radius: var(--radio-full);
+  animation: giro 900ms linear infinite;
+  pointer-events: none;
+}
+
+@keyframes giro {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------------------------------------------------------------- error */
+
+/*
+ * Un video que no se puede decodificar tiene que decirlo con todas las
+ * letras. Chromium falla en silencio: el elemento se queda en negro y sin
+ * este aviso el usuario cree que la aplicacion se ha colgado, cuando lo que
+ * pasa es que el archivo lleva HEVC o audio DTS.
+ */
+.escenario__error {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  z-index: 3;
+  transform: translateX(-50%);
+  max-width: 78%;
+  padding: 10px 16px;
+  border-radius: var(--radio-2);
+  background: rgb(0 0 0 / 0.62);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--realce-borde-fuerte);
+  color: var(--texto);
+  font-size: 12.5px;
+  text-align: center;
+}
