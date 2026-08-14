@@ -1,0 +1,281 @@
+/* ============================================================================
+ * REELE · AJUSTES
+ * Panel flotante sobre la aplicacion. Como flota sobre pixeles de la propia
+ * pagina, aqui el backdrop-filter si tiene algo que difuminar.
+ * ==========================================================================*/
+
+.ajustes__velo {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  place-items: center;
+  padding: 40px 20px;
+  background: rgb(0 0 0 / 0.42);
+  animation: velo-entra var(--dur-2) var(--ease-out);
+}
+
+@keyframes velo-entra {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ajustes {
+  display: flex;
+  flex-direction: column;
+  width: min(680px, 100%);
+  max-height: 100%;
+  overflow: hidden;
+  animation: ajustes-entra var(--dur-3) var(--ease-out);
+}
+
+@keyframes ajustes-entra {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+.ajustes__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px 22px;
+  border-bottom: 1px solid var(--realce-borde);
+}
+
+.ajustes__titulo {
+  font-size: 19px;
+}
+
+.ajustes__cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px 22px 22px;
+}
+
+.ajustes__seccion {
+  padding-top: 18px;
+}
+
+.ajustes__seccion-titulo {
+  margin-bottom: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--texto-3);
+}
+
+/* -------------------------------------------------------------- una fila */
+
+.ajuste {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.05);
+}
+
+.ajuste:last-child {
+  border-bottom: none;
+}
+
+.ajuste__texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.ajuste__titulo {
+  font-size: 13px;
+}
+
+.ajuste__ayuda {
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--texto-3);
+}
+
+.ajuste__control {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---------------------------------------------------------- interruptor */
+
+/*
+ * Interruptor al estilo de Windows 11: pista, pomo y nada mas. Es un
+ * <button role=switch> y no un checkbox porque asi el estado vive en un
+ * atributo que el CSS puede leer y un lector de pantalla tambien.
+ */
+.interruptor {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border: 1px solid var(--realce-borde-fuerte);
+  border-radius: var(--radio-full);
+  background: rgb(255 255 255 / 0.06);
+  transition: background var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out);
+}
+
+.interruptor::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radio-full);
+  background: var(--texto-2);
+  transform: translateY(-50%);
+  transition: transform var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out);
+}
+
+.interruptor[aria-checked='true'] {
+  background: rgb(var(--acento) / 0.9);
+  border-color: transparent;
+}
+
+.interruptor[aria-checked='true']::after {
+  transform: translateY(-50%) translateX(18px);
+  background: #0b0e13;
+}
+
+.interruptor:hover::after {
+  background: var(--texto);
+}
+
+.interruptor[aria-checked='true']:hover::after {
+  background: #0b0e13;
+}
+
+/* ------------------------------------------------------------- eleccion */
+
+.eleccion {
+  min-width: 190px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--realce-borde);
+  border-radius: var(--radio-1);
+  background: var(--vidrio-3);
+  color: var(--texto);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.eleccion:hover {
+  border-color: var(--realce-borde-fuerte);
+}
+
+/* La lista desplegada la pinta el sistema y no hereda el vidrio: sin un
+   fondo opaco aqui, en Windows sale con texto blanco sobre blanco. */
+.eleccion option {
+  background: #16191f;
+  color: #fff;
+}
+
+/* ----------------------------------------------------------- deslizador */
+
+.deslizador__caja {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.deslizador {
+  width: 150px;
+  height: 18px;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.deslizador::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: var(--radio-full);
+  background: rgb(255 255 255 / 0.13);
+}
+
+.deslizador::-webkit-slider-thumb {
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  margin-top: -4.5px;
+  border-radius: var(--radio-full);
+  background: rgb(var(--acento));
+  box-shadow: var(--sombra-1);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+
+.deslizador:hover::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.deslizador__valor {
+  min-width: 46px;
+  font-size: 12px;
+  color: var(--texto-2);
+  text-align: right;
+}
+
+/* --------------------------------------------------------------- atajos */
+
+.atajos {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+}
+
+.atajo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.05);
+  font-size: 12.5px;
+}
+
+.atajo:last-child {
+  border-bottom: none;
+}
+
+.atajo__texto {
+  color: var(--texto-2);
+}
+
+.atajo__tecla {
+  flex: 0 0 auto;
+  color: var(--texto-3);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ pie */
+
+.ajustes__pie {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 6px;
+  font-size: 12px;
+  color: var(--texto-3);
+}
+
+.ajustes__enlace {
+  padding: 0;
+  color: rgb(var(--acento));
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ajustes__nota {
+  max-width: 62ch;
+  line-height: 1.55;
+}

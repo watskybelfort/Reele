@@ -12,6 +12,7 @@ import { crearPistasAudio } from './pistas.js';
 import { crearReanudar } from './reanudar.js';
 import { crearAtajos } from './atajos.js';
 import { initSistema } from './sistema.js';
+import { crearAjustes } from './ajustes.js';
 import { $, pintarGlifo } from './dom.js';
 
 const raiz = document.documentElement;
@@ -72,6 +73,8 @@ async function boot() {
 
   const atajos = crearAtajos({ motor, escenario, subtitulos });
 
+  const panelAjustes = crearAjustes({ ajustes, atajos, escenario, subtitulos });
+
   const sistema = initSistema(motor, { activo: ajustes.mediaKeys !== false });
   window.reele.settings.onChange((patch) => {
     if (patch.mediaKeys !== undefined) sistema.setMediaKeys(patch.mediaKeys !== false);
@@ -81,7 +84,7 @@ async function boot() {
   engancharApertura(motor);
 
   await shell.refrescar();
-  return { motor, escenario, shell, atajos, transporte, reanudar, sistema };
+  return { motor, escenario, shell, atajos, transporte, reanudar, sistema, panelAjustes };
 }
 
 /**
